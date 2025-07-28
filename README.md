@@ -1,4 +1,4 @@
-# Aetherium Prime - Web3 Gaming Ecosystem
+# Aetherium Prime - Web3 Gaming Ecosystem (Alpha State)
 
 [![Test Smart Contracts](https://github.com/DevelApp-ai/AetheriumPrime/actions/workflows/test.yml/badge.svg)](https://github.com/DevelApp-ai/AetheriumPrime/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
