@@ -326,22 +326,6 @@ We welcome contributions from the community! Please see our [Contributing Guidel
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
-## 🔗 Links
-
-- **Website**: [https://aetheriumprime.com](https://aetheriumprime.com)
-- **Documentation**: [https://docs.aetheriumprime.com](https://docs.aetheriumprime.com)
-- **Discord**: [https://discord.gg/aetheriumprime](https://discord.gg/aetheriumprime)
-- **Twitter**: [@AetheriumPrime](https://twitter.com/AetheriumPrime)
-- **Medium**: [https://medium.com/@aetheriumprime](https://medium.com/@aetheriumprime)
-
-## 📞 Support
-
-For technical support or questions:
-
-- Create an issue in this repository
-- Join our Discord community
-- Email: support@aetheriumprime.com
-
 ---
 
 **Built with ❤️ by the Aetherium Prime Team**
