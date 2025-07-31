@@ -1,0 +1,212 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema/schema.graphql
+dataSources:
+  - kind: ethereum
+    name: GovernanceToken
+    network: sepolia
+    source:
+      address: "0x0000000000000000000000000000000000000000" # Will be updated after deployment
+      abi: GovernanceToken
+      startBlock: 0 # Will be updated after deployment
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - User
+        - Token
+        - Transfer
+        - Delegation
+      abis:
+        - name: GovernanceToken
+          file: ./abis/GovernanceToken.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+        - event: DelegateChanged(indexed address,indexed address,indexed address)
+          handler: handleDelegateChanged
+        - event: DelegateVotesChanged(indexed address,uint256,uint256)
+          handler: handleDelegateVotesChanged
+      file: ./src/governance-token.ts
+
+  - kind: ethereum
+    name: UtilityToken
+    network: sepolia
+    source:
+      address: "0x0000000000000000000000000000000000000000" # Will be updated after deployment
+      abi: UtilityToken
+      startBlock: 0 # Will be updated after deployment
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - User
+        - UtilityToken
+        - Transfer
+      abis:
+        - name: UtilityToken
+          file: ./abis/UtilityToken.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleUtilityTransfer
+        - event: RoleGranted(indexed bytes32,indexed address,indexed address)
+          handler: handleRoleGranted
+      file: ./src/utility-token.ts
+
+  - kind: ethereum
+    name: GameAssetNFT
+    network: sepolia
+    source:
+      address: "0x0000000000000000000000000000000000000000" # Will be updated after deployment
+      abi: GameAssetNFT
+      startBlock: 0 # Will be updated after deployment
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Asset
+        - User
+        - Transfer
+      abis:
+        - name: GameAssetNFT
+          file: ./abis/GameAssetNFT.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleAssetTransfer
+        - event: AssetMinted(indexed address,indexed uint256,uint8,uint256)
+          handler: handleAssetMinted
+        - event: AssetStaked(indexed uint256,bool)
+          handler: handleAssetStaked
+        - event: AssetLevelUp(indexed uint256,uint256)
+          handler: handleAssetLevelUp
+      file: ./src/game-asset-nft.ts
+
+  - kind: ethereum
+    name: GameResourceNFT
+    network: sepolia
+    source:
+      address: "0x0000000000000000000000000000000000000000" # Will be updated after deployment
+      abi: GameResourceNFT
+      startBlock: 0 # Will be updated after deployment
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Resource
+        - User
+        - Transfer
+      abis:
+        - name: GameResourceNFT
+          file: ./abis/GameResourceNFT.json
+      eventHandlers:
+        - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
+          handler: handleResourceTransferSingle
+        - event: TransferBatch(indexed address,indexed address,indexed address,uint256[],uint256[])
+          handler: handleResourceTransferBatch
+        - event: ResourceCreated(indexed uint256,uint8,string,uint256)
+          handler: handleResourceCreated
+        - event: ResourceMinted(indexed address,indexed uint256,uint256)
+          handler: handleResourceMinted
+      file: ./src/game-resource-nft.ts
+
+  - kind: ethereum
+    name: GameLogic
+    network: sepolia
+    source:
+      address: "0x0000000000000000000000000000000000000000" # Will be updated after deployment
+      abi: GameLogic
+      startBlock: 0 # Will be updated after deployment
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Player
+        - Quest
+        - PvPMatch
+        - CraftingEvent
+      abis:
+        - name: GameLogic
+          file: ./abis/GameLogic.json
+      eventHandlers:
+        - event: PlayerRegistered(indexed address)
+          handler: handlePlayerRegistered
+        - event: QuestCompleted(indexed address,indexed uint256,uint256)
+          handler: handleQuestCompleted
+        - event: PvPResult(indexed address,indexed address,uint256)
+          handler: handlePvPResult
+        - event: ItemCrafted(indexed address,indexed uint256,uint256)
+          handler: handleItemCrafted
+        - event: ExperienceGained(indexed address,uint256,uint256)
+          handler: handleExperienceGained
+      file: ./src/game-logic.ts
+
+  - kind: ethereum
+    name: Marketplace
+    network: sepolia
+    source:
+      address: "0x0000000000000000000000000000000000000000" # Will be updated after deployment
+      abi: Marketplace
+      startBlock: 0 # Will be updated after deployment
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Listing
+        - Sale
+        - Bid
+        - User
+      abis:
+        - name: Marketplace
+          file: ./abis/Marketplace.json
+      eventHandlers:
+        - event: ItemListed(indexed uint256,indexed address,indexed address,uint256,uint256,uint256,uint8)
+          handler: handleItemListed
+        - event: ItemSold(indexed uint256,indexed address,indexed address,uint256,uint256)
+          handler: handleItemSold
+        - event: ItemDelisted(indexed uint256,indexed address)
+          handler: handleItemDelisted
+        - event: BidPlaced(indexed uint256,indexed address,uint256)
+          handler: handleBidPlaced
+        - event: AuctionEnded(indexed uint256,indexed address,uint256)
+          handler: handleAuctionEnded
+      file: ./src/marketplace.ts
+
+  - kind: ethereum
+    name: StakingContract
+    network: sepolia
+    source:
+      address: "0x0000000000000000000000000000000000000000" # Will be updated after deployment
+      abi: StakingContract
+      startBlock: 0 # Will be updated after deployment
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - StakingPool
+        - UserStake
+        - User
+      abis:
+        - name: StakingContract
+          file: ./abis/StakingContract.json
+      eventHandlers:
+        - event: PoolCreated(indexed uint256,uint8,address,uint256)
+          handler: handlePoolCreated
+        - event: TokensStaked(indexed address,indexed uint256,uint256)
+          handler: handleTokensStaked
+        - event: NFTStaked(indexed address,indexed uint256,uint256)
+          handler: handleNFTStaked
+        - event: TokensUnstaked(indexed address,indexed uint256,uint256)
+          handler: handleTokensUnstaked
+        - event: NFTUnstaked(indexed address,indexed uint256,uint256)
+          handler: handleNFTUnstaked
+        - event: RewardsClaimed(indexed address,indexed uint256,uint256)
+          handler: handleRewardsClaimed
+      file: ./src/staking-contract.ts
+

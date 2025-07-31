@@ -10,11 +10,11 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /**
- * @title UtilityToken
+ * @title LithosUtilityToken
  * @dev ERC20 token for in-game utility, upgradeable via UUPS proxy pattern
- * This is the $PLAY token used for in-game transactions in Aetherium Prime
+ * This is the $PLAY token used for in-game transactions in LithosProtocol
  */
-contract UtilityToken is 
+contract LithosUtilityToken is 
     Initializable, 
     ERC20Upgradeable, 
     ERC20BurnableUpgradeable, 

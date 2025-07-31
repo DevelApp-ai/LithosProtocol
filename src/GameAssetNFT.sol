@@ -12,11 +12,11 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 /**
- * @title GameAssetNFT
+ * @title LithosGameAssetNFT
  * @dev ERC721 contract for unique game assets (characters, land, etc.)
  * Upgradeable via UUPS proxy pattern
  */
-contract GameAssetNFT is 
+contract LithosGameAssetNFT is 
     Initializable, 
     ERC721Upgradeable, 
     ERC721EnumerableUpgradeable, 
