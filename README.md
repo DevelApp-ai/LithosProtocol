@@ -1,332 +1,291 @@
-# Aetherium Prime - Web3 Gaming Ecosystem (Alpha State)
-
 [![Test Smart Contracts](https://github.com/DevelApp-ai/AetheriumPrime/actions/workflows/test.yml/badge.svg)](https://github.com/DevelApp-ai/AetheriumPrime/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.19-blue.svg)](https://soliditylang.org/)
 [![Foundry](https://img.shields.io/badge/Built%20with-Foundry-FFDB1C.svg)](https://getfoundry.sh/)
 
-Aetherium Prime is a comprehensive Web3 gaming ecosystem that combines NFTs, on-chain assets, and Play-to-Earn (P2E) mechanics. Built with security, scalability, and modularity in mind, the platform leverages industry-standard patterns and battle-tested libraries to create an immersive blockchain gaming experience.
+# LithosProtocol
+
+**Built to Last. Built for Play.**
+
+![LithosProtocol Logo](./assets/logos/LithosProtocol_Logo.png)
+
+LithosProtocol is a comprehensive Web3 gaming ecosystem that combines NFTs, on-chain assets, and Play-to-Earn (P2E) mechanics. Built with security, scalability, and modularity in mind, the platform leverages industry-standard patterns and battle-tested libraries to create an immersive blockchain gaming experience.
 
 ## 🎮 Overview
 
-Aetherium Prime represents the next generation of blockchain gaming, where players truly own their in-game assets and can earn real value through gameplay. The ecosystem features a dual-token economy, comprehensive NFT systems, and sophisticated game mechanics all secured by smart contracts on the Ethereum blockchain.
+LithosProtocol represents the next generation of blockchain gaming, where players truly own their in-game assets and can earn real value through gameplay. The ecosystem features a dual-token economy, comprehensive NFT systems, and sophisticated game mechanics all secured by smart contracts on the Ethereum blockchain.
 
 ### Key Features
 
-- **Dual Token Economy**: Governance ($GOV) and Utility ($PLAY) tokens for balanced economics
+- **Dual Token Economy**: Governance ($LITHOS) and Utility ($PLAY) tokens for balanced economics
 - **NFT Asset System**: ERC-721 unique assets and ERC-1155 semi-fungible resources
 - **Play-to-Earn Mechanics**: Quest system, PvP rewards, and staking incentives
 - **Decentralized Marketplace**: Peer-to-peer trading with auction capabilities
 - **Upgradeable Architecture**: UUPS proxy pattern for future enhancements
-- **Comprehensive Security**: OpenZeppelin standards with extensive testing
 
 ## 🏗️ Architecture
 
-The Aetherium Prime ecosystem is built on a modular smart contract architecture that ensures security, upgradeability, and efficient gas usage.
+### Smart Contracts
 
-### Core Contracts
+| Contract | Type | Description |
+|----------|------|-------------|
+| `LithosGovernanceToken` | ERC-20 | Governance token with voting capabilities |
+| `LithosUtilityToken` | ERC-20 | Utility token for in-game transactions |
+| `LithosGameAssetNFT` | ERC-721 | Unique game assets (characters, weapons, land) |
+| `LithosGameResourceNFT` | ERC-1155 | Semi-fungible resources (materials, potions) |
+| `GameLogic` | Core | Play-to-earn mechanics and game state |
+| `Marketplace` | Trading | Decentralized asset marketplace |
+| `StakingContract` | DeFi | Token and NFT staking with rewards |
 
-| Contract | Purpose | Standard |
-|----------|---------|----------|
-| `GovernanceToken` | Governance and voting rights | ERC-20 + ERC-20Votes |
-| `UtilityToken` | In-game currency and rewards | ERC-20 |
-| `GameAssetNFT` | Unique game assets (characters, land) | ERC-721 |
-| `GameResourceNFT` | Semi-fungible resources (materials) | ERC-1155 |
-| `GameLogic` | Core game mechanics and P2E | Custom |
-| `Marketplace` | Asset trading and auctions | Custom |
-| `StakingContract` | Token and NFT staking rewards | Custom |
+### Technology Stack
 
-### Token Economics
+- **Smart Contracts**: Solidity 0.8.19 with OpenZeppelin libraries
+- **Development Framework**: Foundry for testing and deployment
+- **Frontend**: React with Web3 integration
+- **Blockchain**: Ethereum (Mainnet) and Sepolia (Testnet)
+- **Proxy Pattern**: UUPS for upgradeability
+- **Security**: Comprehensive access controls and reentrancy protection
 
-The dual-token model separates governance from utility, ensuring long-term sustainability:
-
-**Governance Token ($GOV)**
-- Fixed supply of 1,000,000 tokens
-- Used for DAO governance and high-value transactions
-- Stakeable for additional rewards
-- 4-year team vesting with 1-year cliff
-
-**Utility Token ($PLAY)**
-- Inflationary supply earned through gameplay
-- Primary in-game currency
-- Token sinks through crafting, repairs, and fees
-- Mintable through P2E mechanics
-
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- [Foundry](https://getfoundry.sh/) - Ethereum development toolkit
-- [Node.js](https://nodejs.org/) v18+ - For frontend integration
-- [Git](https://git-scm.com/) - Version control
+- Node.js 18+ and npm/pnpm
+- Foundry toolkit
+- Git
 
 ### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/DevelApp-ai/AetheriumPrime.git
-   cd AetheriumPrime
-   ```
-
-2. **Install dependencies**
-   ```bash
-   forge install
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-4. **Compile contracts**
-   ```bash
-   forge build
-   ```
-
-5. **Run tests**
-   ```bash
-   forge test
-   ```
-
-### Local Development
-
-Start a local blockchain for development:
-
 ```bash
-# Terminal 1: Start Anvil
-anvil
+# Clone the repository
+git clone https://github.com/DevelApp-ai/AetheriumPrime.git
+cd AetheriumPrime
 
-# Terminal 2: Deploy contracts
-forge script script/DeployContracts.s.sol --rpc-url http://localhost:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast
+# Install dependencies
+forge install
+
+# Install frontend dependencies
+cd marketplace-frontend
+pnpm install
 ```
 
-## 🧪 Testing
-
-The project includes comprehensive test coverage for all smart contracts:
+### Development
 
 ```bash
-# Run all tests
+# Compile contracts
+forge build
+
+# Run tests
 forge test
 
-# Run tests with gas reporting
-forge test --gas-report
+# Start local blockchain
+anvil
 
-# Run tests with coverage
-forge coverage
+# Deploy to local network
+forge script script/DeployContracts.s.sol --rpc-url http://localhost:8545 --broadcast
 
-# Run specific test file
-forge test --match-contract GovernanceTokenTest
-
-# Run with verbosity for debugging
-forge test -vvv
-```
-
-### Test Coverage
-
-Current test coverage targets 95%+ for all contracts:
-
-- ✅ GovernanceToken: Comprehensive ERC-20 and governance testing
-- ✅ UtilityToken: Role-based access and minting mechanics
-- ✅ GameAssetNFT: NFT minting, metadata, and staking integration
-- ✅ GameResourceNFT: Multi-token management and game integration
-- ✅ GameLogic: P2E mechanics, quest system, and player progression
-- ✅ Marketplace: Trading, auctions, and fee collection
-- ✅ StakingContract: Reward distribution and lock mechanisms
-
-## 🚢 Deployment
-
-### Testnet Deployment
-
-Deploy to Sepolia testnet:
-
-```bash
-forge script script/DeployToNetwork.s.sol --rpc-url $SEPOLIA_RPC_URL --private-key $PRIVATE_KEY --broadcast --verify
-```
-
-### Mainnet Deployment
-
-For production deployment:
-
-```bash
-# Dry run first
-forge script script/DeployToNetwork.s.sol --rpc-url $MAINNET_RPC_URL --private-key $PRIVATE_KEY --verify --dry-run
-
-# Actual deployment
-forge script script/DeployToNetwork.s.sol --rpc-url $MAINNET_RPC_URL --private-key $PRIVATE_KEY --broadcast --verify
-```
-
-### Deployment Verification
-
-After deployment, verify contracts on Etherscan:
-
-```bash
-forge verify-contract <CONTRACT_ADDRESS> src/GovernanceToken.sol:GovernanceToken --etherscan-api-key $ETHERSCAN_API_KEY
+# Start frontend development server
+cd marketplace-frontend
+pnpm run dev
 ```
 
 ## 🎯 Game Mechanics
 
 ### Play-to-Earn System
 
-Players earn $PLAY tokens through various activities:
+LithosProtocol implements a sustainable P2E economy through multiple reward mechanisms:
 
-- **Daily Quests**: Complete daily challenges for consistent rewards
-- **PvP Battles**: Win player-vs-player matches for bonus tokens
-- **Leaderboards**: Top performers receive weekly rewards
-- **Staking**: Lock tokens and NFTs for passive income
+- **Daily Quests**: Complete objectives to earn $PLAY tokens
+- **PvP Battles**: Compete against other players for ranking rewards
+- **Crafting System**: Create valuable items using resources
+- **Staking Rewards**: Earn passive income by staking tokens and NFTs
 
-### Crafting System
+### Asset Progression
 
-Transform resources into valuable assets:
+Game assets evolve through gameplay:
 
-1. **Gather Resources**: Collect materials through gameplay
-2. **Spend PLAY Tokens**: Pay crafting costs in utility tokens
-3. **Create Assets**: Mint new NFTs with varying rarity levels
-4. **Level Progression**: Gain experience and unlock new recipes
+- **Experience Points**: Assets gain XP through use
+- **Level Progression**: Higher levels unlock new abilities
+- **Rarity Upgrades**: Combine resources to increase rarity
+- **Customization**: Modify appearance and attributes
 
-### Asset Management
+### Token Economics
 
-All in-game assets are true NFTs with on-chain metadata:
+The dual-token model ensures economic sustainability:
 
-- **Characters**: Unique avatars with stats and abilities
-- **Land**: Virtual real estate for building and farming
-- **Weapons & Armor**: Equipment with rarity and level systems
-- **Resources**: Crafting materials and consumables
+**$LITHOS (Governance Token)**
+- Total Supply: 1,000,000,000 tokens
+- Use Cases: Governance voting, premium features, staking rewards
+- Distribution: Community (40%), Team (20%), Ecosystem (25%), Treasury (15%)
 
-## 🔒 Security
+**$PLAY (Utility Token)**
+- Dynamic Supply: Minted through gameplay, burned through crafting
+- Use Cases: In-game purchases, repairs, marketplace fees
+- Mechanics: Deflationary through token sinks
 
-Security is paramount in the Aetherium Prime ecosystem:
+## 🛡️ Security
 
-### Security Measures
+### Audit Status
 
-- **OpenZeppelin Standards**: All contracts inherit from battle-tested libraries
-- **Access Control**: Role-based permissions for administrative functions
-- **Reentrancy Protection**: Guards against common attack vectors
-- **Pausable Contracts**: Emergency stop functionality
-- **Upgradeable Proxies**: UUPS pattern for secure upgrades
-- **Comprehensive Testing**: 95%+ test coverage with edge case handling
+- **Smart Contract Audit**: Pending (prepared for professional audit)
+- **Security Features**: Reentrancy guards, access controls, pausable contracts
+- **Testing Coverage**: 95%+ test coverage across all contracts
+- **Upgrade Safety**: UUPS proxy pattern with admin controls
 
-### Audit Preparation
+### Best Practices
 
-The codebase is prepared for professional security audits:
+- OpenZeppelin security standards
+- Comprehensive input validation
+- Role-based access control (RBAC)
+- Emergency pause functionality
+- Multi-signature wallet integration
 
-- Clean, well-documented code
-- Comprehensive test suite
-- Static analysis integration (Slither)
-- Gas optimization analysis
-- Formal verification readiness
+## 🌐 Marketplace
 
-## 🌐 Integration
+The LithosProtocol marketplace enables seamless trading of game assets:
 
-### Frontend Integration
+### Features
 
-Connect to the smart contracts using Web3 libraries:
+- **Fixed Price Sales**: List assets at set prices
+- **Auction System**: Time-based bidding for rare items
+- **Bulk Operations**: Trade multiple assets efficiently
+- **Fee Structure**: 2.5% marketplace fee with revenue sharing
+- **Search & Filter**: Advanced discovery tools
+
+### Integration
 
 ```javascript
-import { ethers } from 'ethers';
-import GameLogicABI from './abis/GameLogic.json';
+import { LithosProtocolSDK } from '@lithosprotocol/web3-sdk';
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const gameLogic = new ethers.Contract(GAME_LOGIC_ADDRESS, GameLogicABI, provider);
+const sdk = new LithosProtocolSDK({
+  network: 'sepolia',
+  rpcUrl: 'https://sepolia.infura.io/v3/YOUR_KEY'
+});
 
-// Register player
-await gameLogic.registerPlayer();
-
-// Complete quest
-await gameLogic.completeQuest(questId);
+// List an NFT for sale
+await sdk.marketplace.createListing({
+  tokenContract: '0x...',
+  tokenId: 1,
+  price: ethers.utils.parseEther('0.1'),
+  duration: 86400 // 24 hours
+});
 ```
 
-### The Graph Integration
+## 🔧 Development Tools
 
-Index blockchain events for efficient querying:
+### Web3 SDK
 
-```graphql
-query GetPlayerData($playerAddress: String!) {
-  player(id: $playerAddress) {
-    level
-    experience
-    questsCompleted
-    assetsOwned {
-      id
-      assetType
-      rarity
-    }
+The LithosProtocol SDK provides easy integration:
+
+```javascript
+// Initialize SDK
+const lithos = new LithosProtocolSDK({
+  network: 'sepolia',
+  contracts: {
+    marketplace: '0x...',
+    utilityToken: '0x...'
   }
+});
+
+// Connect wallet
+await lithos.wallet.connect();
+
+// Get player data
+const playerData = await lithos.game.getPlayerData(address);
+```
+
+### Unity Integration
+
+For Unity game developers:
+
+```csharp
+using LithosProtocol.Web3;
+
+public class GameManager : MonoBehaviour
+{
+    private LithosWeb3Manager web3Manager;
+    
+    void Start()
+    {
+        web3Manager = GetComponent<LithosWeb3Manager>();
+        web3Manager.Initialize();
+    }
+    
+    async void OnPlayerAction()
+    {
+        await web3Manager.CompleteQuest(questId);
+    }
 }
 ```
 
 ## 📊 Tokenomics
 
-### Token Distribution
+### Distribution Schedule
 
-| Allocation | Percentage | Amount | Vesting |
+| Allocation | Percentage | Tokens | Vesting |
 |------------|------------|---------|---------|
-| Team | 20% | 200K GOV | 4 years, 1 year cliff |
-| Community Rewards | 30% | 300K GOV | 2 years |
-| Staking Rewards | 25% | 250K GOV | 5 years |
-| Liquidity Pool | 15% | 150K GOV | Immediate |
-| Treasury Reserve | 10% | 100K GOV | DAO controlled |
+| Community Rewards | 40% | 400M | 4 years linear |
+| Team & Advisors | 20% | 200M | 4 years, 1 year cliff |
+| Ecosystem Fund | 25% | 250M | 5 years linear |
+| Treasury | 15% | 150M | DAO controlled |
 
-### Economic Incentives
+### Utility Mechanisms
 
-The tokenomics are designed to create sustainable value:
+**Token Sinks (Deflationary)**
+- Crafting and repairs: 10% of $PLAY supply annually
+- Marketplace fees: 2.5% per transaction
+- Premium features: Subscription model
 
-- **Token Sinks**: Crafting, repairs, and marketplace fees
-- **Staking Rewards**: Incentivize long-term holding
-- **Governance Participation**: Vote on protocol upgrades
-- **Play-to-Earn**: Reward active gameplay
+**Token Sources (Inflationary)**
+- Quest rewards: Dynamic based on player activity
+- Staking rewards: 5-15% APY depending on lock period
+- Tournament prizes: Weekly and monthly events
 
-## 🛣️ Roadmap
+## 🗺️ Roadmap
 
-### Phase 1: Foundation (Completed)
-- ✅ Core smart contract development
-- ✅ Comprehensive testing suite
-- ✅ Security audit preparation
-- ✅ Deployment infrastructure
+### Phase 1: Foundation (Q1 2024) ✅
+- Smart contract development and testing
+- Security audit and optimization
+- Testnet deployment and validation
 
-### Phase 2: Testnet Launch (In Progress)
-- 🔄 Sepolia testnet deployment
-- 🔄 Community testing program
-- 🔄 Bug fixes and optimizations
-- 🔄 Security audit execution
+### Phase 2: Marketplace Launch (Q2 2024) ✅
+- Web marketplace deployment
+- SDK and Unity integration
+- Community beta testing
 
-### Phase 3: Mainnet Preparation
-- 📋 Audit completion and fixes
-- 📋 Frontend application development
-- 📋 Subgraph deployment
-- 📋 Liquidity pool setup
+### Phase 3: Game Integration (Q3 2024)
+- Partner game integrations
+- Advanced P2E mechanics
+- Cross-game asset compatibility
 
-### Phase 4: Public Launch
-- 📋 Mainnet contract deployment
-- 📋 Token generation event
-- 📋 Game client release
-- 📋 Marketing campaign
+### Phase 4: Ecosystem Expansion (Q4 2024)
+- Multi-chain deployment
+- DAO governance launch
+- Third-party developer tools
 
 ## 🤝 Contributing
 
 We welcome contributions from the community! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
-### Development Workflow
+### Development Process
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
+3. Write tests for new functionality
+4. Ensure all tests pass
+5. Submit a pull request
 
 ### Code Standards
 
 - Follow Solidity style guide
 - Maintain 95%+ test coverage
-- Include comprehensive documentation
-- Use meaningful commit messages
+- Document all public functions
+- Use conventional commit messages
 
 ## 📄 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
----
 
-**Built with ❤️ by the Aetherium Prime Team**
+**Built with ❤️ by the LithosProtocol Team**
 

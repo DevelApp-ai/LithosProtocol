@@ -3,27 +3,31 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /**
- * @title GovernanceToken
- * @dev ERC20 token with governance features, upgradeable via UUPS proxy pattern
- * This is the $GOV token used for governance and staking in Aetherium Prime
+ * @title LithosGovernanceToken
+ * @dev ERC20 governance token for LithosProtocol with voting capabilities
+ * 
+ * Features:
+ * - Voting and delegation capabilities
+ * - Role-based access control
+ * - Pausable functionality
+ * - Upgradeable via UUPS proxy pattern
+ * - Burn functionality for deflationary mechanics
  */
-contract GovernanceToken is 
-    Initializable, 
-    ERC20Upgradeable, 
-    ERC20BurnableUpgradeable, 
-    ERC20PausableUpgradeable, 
-    OwnableUpgradeable, 
-    ERC20PermitUpgradeable, 
-    ERC20VotesUpgradeable, 
-    UUPSUpgradeable 
+contract LithosGovernanceToken is 
+    Initializable,
+    ERC20Upgradeable,
+    ERC20BurnableUpgradeable,
+    ERC20VotesUpgradeable,
+    AccessControlUpgradeable,
+    PausableUpgradeable,
+    UUPSUpgradeable
 {
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -33,8 +37,8 @@ contract GovernanceToken is
     /**
      * @dev Initialize the contract
      * @param initialOwner The initial owner of the contract
-     * @param name The name of the token
-     * @param symbol The symbol of the token
+     * @param name The name of the token (default: "Lithos Governance Token")
+     * @param symbol The symbol of the token (default: "LITHOS")
      * @param totalSupply The total supply of tokens to mint
      */
     function initialize(

@@ -12,3 +12,5 @@ docs/
 
 # Dotenv file
 .env
+marketplace-frontend/
+lithos-api-service/

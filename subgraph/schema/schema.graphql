@@ -1,0 +1,379 @@
+type User @entity {
+  id: ID! # User address
+  governanceTokenBalance: BigInt!
+  utilityTokenBalance: BigInt!
+  votingPower: BigInt!
+  delegatedTo: User
+  delegatedFrom: [User!]! @derivedFrom(field: "delegatedTo")
+  
+  # Player data
+  isRegistered: Boolean!
+  level: BigInt!
+  experience: BigInt!
+  pvpWins: BigInt!
+  pvpLosses: BigInt!
+  lastDailyQuestClaim: BigInt!
+  
+  # Assets owned
+  assetsOwned: [Asset!]! @derivedFrom(field: "owner")
+  resourcesOwned: [ResourceBalance!]! @derivedFrom(field: "user")
+  
+  # Marketplace activity
+  listings: [Listing!]! @derivedFrom(field: "seller")
+  purchases: [Sale!]! @derivedFrom(field: "buyer")
+  bids: [Bid!]! @derivedFrom(field: "bidder")
+  
+  # Staking activity
+  stakes: [UserStake!]! @derivedFrom(field: "user")
+  
+  # Quest activity
+  questsCompleted: [QuestCompletion!]! @derivedFrom(field: "player")
+  
+  # Crafting activity
+  itemsCrafted: [CraftingEvent!]! @derivedFrom(field: "player")
+  
+  # Timestamps
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+type Token @entity {
+  id: ID! # Contract address
+  name: String!
+  symbol: String!
+  decimals: Int!
+  totalSupply: BigInt!
+  type: TokenType!
+  
+  # Transfers
+  transfers: [Transfer!]! @derivedFrom(field: "token")
+  
+  # Timestamps
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+enum TokenType {
+  GOVERNANCE
+  UTILITY
+}
+
+type Transfer @entity {
+  id: ID! # Transaction hash + log index
+  token: Token!
+  from: User!
+  to: User!
+  amount: BigInt!
+  
+  # Transaction details
+  transactionHash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type Asset @entity {
+  id: ID! # Contract address + token ID
+  tokenId: BigInt!
+  contract: Bytes!
+  owner: User!
+  
+  # Asset metadata
+  assetType: AssetType!
+  level: BigInt!
+  rarity: BigInt!
+  isStaked: Boolean!
+  
+  # Marketplace activity
+  listings: [Listing!]! @derivedFrom(field: "asset")
+  sales: [Sale!]! @derivedFrom(field: "asset")
+  
+  # Staking activity
+  stakes: [UserStake!]! @derivedFrom(field: "stakedAssets")
+  
+  # Timestamps
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+enum AssetType {
+  CHARACTER
+  LAND
+  WEAPON
+  ARMOR
+  ACCESSORY
+}
+
+type Resource @entity {
+  id: ID! # Contract address + token ID
+  tokenId: BigInt!
+  contract: Bytes!
+  
+  # Resource metadata
+  resourceType: ResourceType!
+  rarity: BigInt!
+  maxSupply: BigInt!
+  totalSupply: BigInt!
+  name: String!
+  description: String!
+  isActive: Boolean!
+  
+  # User balances
+  balances: [ResourceBalance!]! @derivedFrom(field: "resource")
+  
+  # Timestamps
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+enum ResourceType {
+  CRAFTING_MATERIAL
+  POTION
+  CONSUMABLE
+  CURRENCY_ITEM
+}
+
+type ResourceBalance @entity {
+  id: ID! # User address + resource ID
+  user: User!
+  resource: Resource!
+  balance: BigInt!
+  
+  # Timestamps
+  updatedAt: BigInt!
+}
+
+type Player @entity {
+  id: ID! # User address
+  user: User!
+  level: BigInt!
+  experience: BigInt!
+  pvpWins: BigInt!
+  pvpLosses: BigInt!
+  lastDailyQuestClaim: BigInt!
+  isActive: Boolean!
+  
+  # Activity
+  questsCompleted: [QuestCompletion!]! @derivedFrom(field: "player")
+  pvpMatches: [PvPMatch!]! @derivedFrom(field: "participants")
+  itemsCrafted: [CraftingEvent!]! @derivedFrom(field: "player")
+  
+  # Timestamps
+  registeredAt: BigInt!
+  updatedAt: BigInt!
+}
+
+type Quest @entity {
+  id: ID! # Quest ID
+  questId: BigInt!
+  name: String!
+  description: String!
+  rewardAmount: BigInt!
+  requiredLevel: BigInt!
+  isActive: Boolean!
+  isDaily: Boolean!
+  
+  # Completions
+  completions: [QuestCompletion!]! @derivedFrom(field: "quest")
+  
+  # Timestamps
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+type QuestCompletion @entity {
+  id: ID! # Transaction hash + log index
+  quest: Quest!
+  player: Player!
+  reward: BigInt!
+  
+  # Transaction details
+  transactionHash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type PvPMatch @entity {
+  id: ID! # Transaction hash + log index
+  winner: Player!
+  loser: Player!
+  participants: [Player!]!
+  reward: BigInt!
+  
+  # Transaction details
+  transactionHash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type CraftingEvent @entity {
+  id: ID! # Transaction hash + log index
+  player: Player!
+  asset: Asset!
+  cost: BigInt!
+  resourcesUsed: [BigInt!]!
+  resourceAmounts: [BigInt!]!
+  
+  # Transaction details
+  transactionHash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type Listing @entity {
+  id: ID! # Listing ID
+  listingId: BigInt!
+  seller: User!
+  asset: Asset
+  nftContract: Bytes!
+  tokenId: BigInt!
+  amount: BigInt!
+  assetType: MarketplaceAssetType!
+  listingType: ListingType!
+  paymentToken: Bytes!
+  price: BigInt!
+  endTime: BigInt!
+  isActive: Boolean!
+  
+  # Auction data
+  highestBidder: User
+  highestBid: BigInt!
+  bids: [Bid!]! @derivedFrom(field: "listing")
+  
+  # Sale data
+  sale: Sale @derivedFrom(field: "listing")
+  
+  # Timestamps
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+enum MarketplaceAssetType {
+  ERC721
+  ERC1155
+}
+
+enum ListingType {
+  FIXED_PRICE
+  AUCTION
+}
+
+type Bid @entity {
+  id: ID! # Transaction hash + log index
+  listing: Listing!
+  bidder: User!
+  amount: BigInt!
+  
+  # Transaction details
+  transactionHash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type Sale @entity {
+  id: ID! # Transaction hash + log index
+  listing: Listing!
+  asset: Asset!
+  seller: User!
+  buyer: User!
+  price: BigInt!
+  fee: BigInt!
+  
+  # Transaction details
+  transactionHash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+type StakingPool @entity {
+  id: ID! # Pool ID
+  poolId: BigInt!
+  poolType: PoolType!
+  stakingToken: Bytes!
+  rewardRate: BigInt!
+  lockPeriod: BigInt!
+  totalStaked: BigInt!
+  maxStakePerUser: BigInt!
+  isActive: Boolean!
+  
+  # User stakes
+  userStakes: [UserStake!]! @derivedFrom(field: "pool")
+  
+  # Timestamps
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+enum PoolType {
+  TOKEN_STAKING
+  NFT_STAKING
+}
+
+type UserStake @entity {
+  id: ID! # User address + pool ID
+  user: User!
+  pool: StakingPool!
+  amount: BigInt!
+  stakedAt: BigInt!
+  lockUntil: BigInt!
+  rewards: BigInt!
+  
+  # NFT staking
+  stakedAssets: [Asset!]!
+  
+  # Reward claims
+  rewardClaims: [RewardClaim!]! @derivedFrom(field: "userStake")
+  
+  # Timestamps
+  createdAt: BigInt!
+  updatedAt: BigInt!
+}
+
+type RewardClaim @entity {
+  id: ID! # Transaction hash + log index
+  userStake: UserStake!
+  user: User!
+  pool: StakingPool!
+  amount: BigInt!
+  
+  # Transaction details
+  transactionHash: Bytes!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+
+# Global statistics
+type GlobalStats @entity {
+  id: ID! # "global"
+  
+  # Token stats
+  totalGovernanceTokenSupply: BigInt!
+  totalUtilityTokenSupply: BigInt!
+  
+  # User stats
+  totalUsers: BigInt!
+  totalPlayers: BigInt!
+  
+  # Asset stats
+  totalAssets: BigInt!
+  totalResources: BigInt!
+  
+  # Marketplace stats
+  totalListings: BigInt!
+  totalSales: BigInt!
+  totalVolume: BigInt!
+  
+  # Staking stats
+  totalStakingPools: BigInt!
+  totalStaked: BigInt!
+  totalRewardsDistributed: BigInt!
+  
+  # Game stats
+  totalQuests: BigInt!
+  totalQuestCompletions: BigInt!
+  totalPvPMatches: BigInt!
+  totalItemsCrafted: BigInt!
+  
+  # Timestamps
+  updatedAt: BigInt!
+}
+
