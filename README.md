@@ -286,19 +286,6 @@ We welcome contributions from the community! Please see our [Contributing Guidel
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
-## 🔗 Links
-
-- **Website**: [https://lithosprotocol.com](https://lithosprotocol.com)
-- **Documentation**: [https://docs.lithosprotocol.com](https://docs.lithosprotocol.com)
-- **Discord**: [https://discord.gg/lithosprotocol](https://discord.gg/lithosprotocol)
-- **Twitter**: [@LithosProtocol](https://twitter.com/LithosProtocol)
-- **GitHub**: [https://github.com/DevelApp-ai/AetheriumPrime](https://github.com/DevelApp-ai/AetheriumPrime)
-
-## ⚠️ Disclaimer
-
-LithosProtocol is experimental software. Use at your own risk. The team is not responsible for any loss of funds or assets. Please conduct your own research before participating in any blockchain-based activities.
-
----
 
 **Built with ❤️ by the LithosProtocol Team**
 
