@@ -23,6 +23,7 @@ contract GameLogicTest is Test {
     event QuestCompleted(address indexed player, uint256 indexed questId, uint256 reward);
     event PvPResult(address indexed winner, address indexed loser, uint256 reward);
     event ItemCrafted(address indexed player, uint256 indexed tokenId, uint256 cost);
+    event ItemRepaired(address indexed player, uint256 indexed tokenId, uint256 cost);
     event ExperienceGained(address indexed player, uint256 amount, uint256 newLevel);
     
     function setUp() public {

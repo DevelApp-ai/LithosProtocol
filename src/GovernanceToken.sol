@@ -26,9 +26,10 @@ contract GovernanceToken is
     Initializable,
     ERC20Upgradeable,
     ERC20BurnableUpgradeable,
+    ERC20PausableUpgradeable,
     ERC20VotesUpgradeable,
+    OwnableUpgradeable,
     AccessControlUpgradeable,
-    PausableUpgradeable,
     UUPSUpgradeable
 {
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -112,7 +113,7 @@ contract GovernanceToken is
     function nonces(address owner)
         public
         view
-        override(ERC20PermitUpgradeable, NoncesUpgradeable)
+        override
         returns (uint256)
     {
         return super.nonces(owner);

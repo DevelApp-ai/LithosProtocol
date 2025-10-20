@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 /**
@@ -250,15 +250,15 @@ contract AdvancedTokenSinks is
     /**
      * @dev Rent an asset
      * @param rentalId The rental listing ID
-     * @param days Number of days to rent
+     * @param rentalDays Number of days to rent
      */
-    function rentAsset(uint256 rentalId, uint256 days) external nonReentrant whenNotPaused {
+    function rentAsset(uint256 rentalId, uint256 rentalDays) external nonReentrant whenNotPaused {
         AssetRental storage rental = assetRentals[rentalId];
         require(rental.isActive, "Rental not active");
         require(rental.renter == address(0), "Already rented");
-        require(days <= rental.duration, "Duration too long");
+        require(rentalDays <= rental.duration, "Duration too long");
         
-        uint256 totalCost = rental.dailyRate * days;
+        uint256 totalCost = rental.dailyRate * rentalDays;
         
         // Pay rental fee (10% burned, 90% to owner)
         require(
@@ -275,7 +275,7 @@ contract AdvancedTokenSinks is
         // Set rental details
         rental.renter = msg.sender;
         rental.startTime = block.timestamp;
-        rental.duration = days * 1 days;
+        rental.duration = rentalDays * 1 days;
         
         playerRentals[msg.sender].push(rentalId);
         
