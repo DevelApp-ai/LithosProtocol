@@ -4,13 +4,15 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /**
- * @title LithosGovernanceToken
+ * @title GovernanceToken
  * @dev ERC20 governance token for LithosProtocol with voting capabilities
  * 
  * Features:
@@ -20,7 +22,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
  * - Upgradeable via UUPS proxy pattern
  * - Burn functionality for deflationary mechanics
  */
-contract LithosGovernanceToken is 
+contract GovernanceToken is 
     Initializable,
     ERC20Upgradeable,
     ERC20BurnableUpgradeable,
@@ -50,11 +52,15 @@ contract LithosGovernanceToken is
         __ERC20_init(name, symbol);
         __ERC20Burnable_init();
         __ERC20Pausable_init();
-        __Ownable_init(initialOwner);
+        __Ownable_init();
+        __Pausable_init();
+        __AccessControl_init();
         __ERC20Permit_init(name);
         __ERC20Votes_init();
         __UUPSUpgradeable_init();
 
+        _transferOwnership(initialOwner);
+        _grantRole(DEFAULT_ADMIN_ROLE, initialOwner);
         _mint(initialOwner, totalSupply);
     }
 
@@ -96,11 +102,11 @@ contract LithosGovernanceToken is
 
     // The following functions are overrides required by Solidity.
 
-    function _update(address from, address to, uint256 value)
+    function _beforeTokenTransfer(address from, address to, uint256 amount)
         internal
         override(ERC20Upgradeable, ERC20PausableUpgradeable, ERC20VotesUpgradeable)
     {
-        super._update(from, to, value);
+        super._beforeTokenTransfer(from, to, amount);
     }
 
     function nonces(address owner)
