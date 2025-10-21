@@ -97,11 +97,13 @@ contract StakingContract is
         address _utilityToken,
         address _gameAssetNFT
     ) initializer public {
-        __Ownable_init(initialOwner);
+        __Ownable_init();
         __AccessControl_init();
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
         __Pausable_init();
+
+        _transferOwnership(initialOwner);
 
         _grantRole(DEFAULT_ADMIN_ROLE, initialOwner);
         _grantRole(POOL_MANAGER_ROLE, initialOwner);

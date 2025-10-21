@@ -103,9 +103,30 @@ contract GovernanceToken is
 
     // The following functions are overrides required by Solidity.
 
+    function _mint(address account, uint256 amount)
+        internal
+        override(ERC20Upgradeable, ERC20VotesUpgradeable)
+    {
+        super._mint(account, amount);
+    }
+
+    function _burn(address account, uint256 amount)
+        internal
+        override(ERC20Upgradeable, ERC20VotesUpgradeable)
+    {
+        super._burn(account, amount);
+    }
+
+    function _afterTokenTransfer(address from, address to, uint256 amount)
+        internal
+        override(ERC20Upgradeable, ERC20VotesUpgradeable)
+    {
+        super._afterTokenTransfer(from, to, amount);
+    }
+
     function _beforeTokenTransfer(address from, address to, uint256 amount)
         internal
-        override(ERC20Upgradeable, ERC20PausableUpgradeable, ERC20VotesUpgradeable)
+        override(ERC20Upgradeable, ERC20PausableUpgradeable)
     {
         super._beforeTokenTransfer(from, to, amount);
     }

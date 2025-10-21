@@ -108,11 +108,13 @@ contract Marketplace is
         uint256 _marketplaceFee,
         address _feeRecipient
     ) initializer public {
-        __Ownable_init(initialOwner);
+        __Ownable_init();
         __AccessControl_init();
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
         __Pausable_init();
+
+        _transferOwnership(initialOwner);
 
         _grantRole(DEFAULT_ADMIN_ROLE, initialOwner);
         _grantRole(MODERATOR_ROLE, initialOwner);

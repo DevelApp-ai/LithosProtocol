@@ -391,7 +391,10 @@ contract AdvancedTokenSinks is
 
     /**
      * @dev Get comprehensive burn statistics
-     * @return Total burned, daily average, top categories
+     * @return totalBurned Total amount burned across all categories
+     * @return cosmeticsBurned Amount burned for cosmetics
+     * @return tournamentsBurned Amount burned for tournaments
+     * @return rentalsBurned Amount burned for rentals
      */
     function getBurnStatistics() external view returns (
         uint256 totalBurned,

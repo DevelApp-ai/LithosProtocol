@@ -97,7 +97,7 @@ contract UtilityToken is
      * @param from The address to burn tokens from
      * @param amount The amount of tokens to burn
      */
-    function burnFrom(address from, uint256 amount) public onlyRole(BURNER_ROLE) {
+    function burnFrom(address from, uint256 amount) public override onlyRole(BURNER_ROLE) {
         _burn(from, amount);
     }
 
