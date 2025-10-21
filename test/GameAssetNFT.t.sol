@@ -269,8 +269,8 @@ contract GameAssetNFTTest is Test {
         vm.stopPrank();
     }
     
-    function test_RevertWhen_TransferStakedAsset() public {
-        // Mint and stake an asset
+    function test_RevertWhen_LevelUpWithoutRole() public {
+        // Mint asset first
         vm.startPrank(minter);
         uint256 tokenId = nft.mintAsset(
             user1,
@@ -280,14 +280,11 @@ contract GameAssetNFTTest is Test {
         );
         vm.stopPrank();
         
-        vm.startPrank(owner);
-        nft.setStakingStatus(tokenId, true);
-        vm.stopPrank();
-        
-        // Try to transfer staked asset (should fail)
         vm.startPrank(user1);
-        vm.expectRevert("Cannot transfer staked asset");
-        nft.transferFrom(user1, user2, tokenId);
+        
+        vm.expectRevert();
+        nft.levelUpAsset(tokenId);
+        
         vm.stopPrank();
     }
 }

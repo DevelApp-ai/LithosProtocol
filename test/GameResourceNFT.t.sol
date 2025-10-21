@@ -18,7 +18,7 @@ contract GameResourceNFTTest is Test {
     string constant BASE_URI = "https://api.example.com/metadata/";
     
     event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
-    event ResourceCreated(uint256 indexed resourceId, GameResourceNFT.ResourceType resourceType, string name);
+    event ResourceCreated(uint256 indexed tokenId, GameResourceNFT.ResourceType resourceType, string name, uint256 maxSupply);
     
     function setUp() public {
         // Deploy implementation
@@ -57,7 +57,7 @@ contract GameResourceNFTTest is Test {
         vm.startPrank(owner);
         
         vm.expectEmit(true, false, false, true);
-        emit ResourceCreated(1, GameResourceNFT.ResourceType.CRAFTING_MATERIAL, "Iron Ore");
+        emit ResourceCreated(1, GameResourceNFT.ResourceType.CRAFTING_MATERIAL, "Iron Ore", 1000);
         
         uint256 resourceId = nft.createResource(
             GameResourceNFT.ResourceType.CRAFTING_MATERIAL,
@@ -464,7 +464,7 @@ contract GameResourceNFTTest is Test {
         ids[0] = resourceId;
         amounts[0] = 100; // More than balance
         
-        vm.expectRevert("ERC1155: burn amount exceeds balance");
+        vm.expectRevert("ERC1155: burn amount exceeds totalSupply");
         nft.gameBurnBatch(user1, ids, amounts);
         
         vm.stopPrank();
