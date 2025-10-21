@@ -306,17 +306,19 @@ contract GovernanceTokenTest is Test {
         vm.stopPrank();
     }
     
-    function testFailTransferInsufficientBalance() public {
+    function test_RevertWhen_TransferInsufficientBalance() public {
         vm.startPrank(user1); // user1 has no tokens
         
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
         token.transfer(user2, 1000 * 10**18);
         
         vm.stopPrank();
     }
     
-    function testFailMintToZeroAddress() public {
+    function test_RevertWhen_MintToZeroAddress() public {
         vm.startPrank(owner);
         
+        vm.expectRevert("ERC20: mint to the zero address");
         token.mint(address(0), 1000 * 10**18);
         
         vm.stopPrank();
