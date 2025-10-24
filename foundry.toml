@@ -24,6 +24,20 @@ remappings = [
     "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/"
 ]
 
+# Coverage profile with minimum IR optimization to avoid stack too deep errors
+[profile.coverage]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc = "0.8.19"
+via_ir = true
+optimizer = true
+optimizer_runs = 1
+remappings = [
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/"
+]
+
 [rpc_endpoints]
 sepolia = "https://sepolia.infura.io/v3/${INFURA_API_KEY}"
 mainnet = "https://mainnet.infura.io/v3/${INFURA_API_KEY}"
