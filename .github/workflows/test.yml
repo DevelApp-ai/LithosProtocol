@@ -8,6 +8,7 @@ on:
 
 env:
   FOUNDRY_PROFILE: ci
+  FOUNDRY_DISABLE_NIGHTLY_WARNING: true
 
 jobs:
   check:
@@ -42,12 +43,15 @@ jobs:
 
       - name: Run Forge coverage
         run: |
-          forge coverage --report lcov
+          echo "Running coverage with IR minimum optimization..."
+          forge coverage --report lcov --ir-minimum
         id: coverage
+        continue-on-error: false
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./lcov.info
           flags: smart-contracts
           name: smart-contracts-coverage

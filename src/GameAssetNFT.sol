@@ -7,16 +7,17 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URISto
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 /**
- * @title LithosGameAssetNFT
+ * @title GameAssetNFT
  * @dev ERC721 contract for unique game assets (characters, land, etc.)
  * Upgradeable via UUPS proxy pattern
  */
-contract LithosGameAssetNFT is 
+contract GameAssetNFT is 
     Initializable, 
     ERC721Upgradeable, 
     ERC721EnumerableUpgradeable, 
@@ -72,11 +73,13 @@ contract LithosGameAssetNFT is
         __ERC721Enumerable_init();
         __ERC721URIStorage_init();
         __ERC721Pausable_init();
-        __Ownable_init(initialOwner);
+        __Ownable_init();
+        __Pausable_init();
         __AccessControl_init();
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
 
+        _transferOwnership(initialOwner);
         _grantRole(DEFAULT_ADMIN_ROLE, initialOwner);
         _grantRole(MINTER_ROLE, initialOwner);
         _grantRole(GAME_ROLE, initialOwner);
@@ -191,19 +194,18 @@ contract LithosGameAssetNFT is
 
     // The following functions are overrides required by Solidity.
 
-    function _update(address to, uint256 tokenId, address auth)
+    function _beforeTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize)
         internal
         override(ERC721Upgradeable, ERC721EnumerableUpgradeable, ERC721PausableUpgradeable)
-        returns (address)
     {
-        return super._update(to, tokenId, auth);
+        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
     }
 
-    function _increaseBalance(address account, uint128 value)
+    function _burn(uint256 tokenId)
         internal
-        override(ERC721Upgradeable, ERC721EnumerableUpgradeable)
+        override(ERC721Upgradeable, ERC721URIStorageUpgradeable)
     {
-        super._increaseBalance(account, value);
+        super._burn(tokenId);
     }
 
     function tokenURI(uint256 tokenId)

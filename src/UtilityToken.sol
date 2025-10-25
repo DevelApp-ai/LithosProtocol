@@ -6,15 +6,16 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20Burnable
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /**
- * @title LithosUtilityToken
+ * @title UtilityToken
  * @dev ERC20 token for in-game utility, upgradeable via UUPS proxy pattern
  * This is the $PLAY token used for in-game transactions in LithosProtocol
  */
-contract LithosUtilityToken is 
+contract UtilityToken is 
     Initializable, 
     ERC20Upgradeable, 
     ERC20BurnableUpgradeable, 
@@ -48,10 +49,12 @@ contract LithosUtilityToken is
         __ERC20_init(name, symbol);
         __ERC20Burnable_init();
         __ERC20Pausable_init();
-        __Ownable_init(initialOwner);
+        __Ownable_init();
+        __Pausable_init();
         __AccessControl_init();
         __UUPSUpgradeable_init();
 
+        _transferOwnership(initialOwner);
         _grantRole(DEFAULT_ADMIN_ROLE, initialOwner);
         _grantRole(MINTER_ROLE, initialOwner);
         _grantRole(BURNER_ROLE, initialOwner);
@@ -94,7 +97,7 @@ contract LithosUtilityToken is
      * @param from The address to burn tokens from
      * @param amount The amount of tokens to burn
      */
-    function burnFrom(address from, uint256 amount) public onlyRole(BURNER_ROLE) {
+    function burnFrom(address from, uint256 amount) public override onlyRole(BURNER_ROLE) {
         _burn(from, amount);
     }
 
@@ -121,11 +124,11 @@ contract LithosUtilityToken is
 
     // The following functions are overrides required by Solidity.
 
-    function _update(address from, address to, uint256 value)
+    function _beforeTokenTransfer(address from, address to, uint256 amount)
         internal
         override(ERC20Upgradeable, ERC20PausableUpgradeable)
     {
-        super._update(from, to, value);
+        super._beforeTokenTransfer(from, to, amount);
     }
 
     function supportsInterface(bytes4 interfaceId)

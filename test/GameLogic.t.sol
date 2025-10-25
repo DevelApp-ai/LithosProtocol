@@ -23,6 +23,7 @@ contract GameLogicTest is Test {
     event QuestCompleted(address indexed player, uint256 indexed questId, uint256 reward);
     event PvPResult(address indexed winner, address indexed loser, uint256 reward);
     event ItemCrafted(address indexed player, uint256 indexed tokenId, uint256 cost);
+    event ItemRepaired(address indexed player, uint256 indexed tokenId, uint256 cost);
     event ExperienceGained(address indexed player, uint256 amount, uint256 newLevel);
     
     function setUp() public {
@@ -89,10 +90,17 @@ contract GameLogicTest is Test {
         assertEq(gameLogic.owner(), owner);
         
         // Check default game config
-        GameLogic.GameConfig memory config = gameLogic.gameConfig();
-        assertEq(config.dailyQuestReward, 100 * 10**18);
-        assertEq(config.pvpWinReward, 50 * 10**18);
-        assertEq(config.craftingCost, 10 * 10**18);
+        (
+            uint256 dailyQuestReward,
+            uint256 pvpWinReward,
+            uint256 leaderboardReward,
+            uint256 craftingCost,
+            uint256 repairCost,
+            uint256 tournamentEntryFee
+        ) = gameLogic.gameConfig();
+        assertEq(dailyQuestReward, 100 * 10**18);
+        assertEq(pvpWinReward, 50 * 10**18);
+        assertEq(craftingCost, 10 * 10**18);
     }
     
     function testPlayerRegistration() public {
@@ -419,10 +427,17 @@ contract GameLogicTest is Test {
         
         gameLogic.updateGameConfig(newConfig);
         
-        GameLogic.GameConfig memory updatedConfig = gameLogic.gameConfig();
-        assertEq(updatedConfig.dailyQuestReward, 200 * 10**18);
-        assertEq(updatedConfig.pvpWinReward, 100 * 10**18);
-        assertEq(updatedConfig.craftingCost, 20 * 10**18);
+        (
+            uint256 dailyQuestReward,
+            uint256 pvpWinReward,
+            uint256 leaderboardReward,
+            uint256 craftingCost,
+            uint256 repairCost,
+            uint256 tournamentEntryFee
+        ) = gameLogic.gameConfig();
+        assertEq(dailyQuestReward, 200 * 10**18);
+        assertEq(pvpWinReward, 100 * 10**18);
+        assertEq(craftingCost, 20 * 10**18);
         
         vm.stopPrank();
     }

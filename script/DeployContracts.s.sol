@@ -43,7 +43,7 @@ contract DeployContracts is Script {
         address stakingContract;
     }
 
-    function run() external returns (DeployedContracts memory) {
+    function run() external virtual returns (DeployedContracts memory) {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
         
