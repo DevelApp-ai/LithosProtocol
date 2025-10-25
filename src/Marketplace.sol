@@ -143,8 +143,7 @@ contract Marketplace is
     ) external whenNotPaused nonReentrant returns (uint256) {
         require(price > 0, "Price must be greater than 0");
         require(IERC721(nftContract).ownerOf(tokenId) == msg.sender, "Not token owner");
-        require(IERC721(nftContract).isApprovedForAll(msg.sender, address(this)) || 
-                IERC721(nftContract).getApproved(tokenId) == address(this), "Not approved");
+        require(IERC721(nftContract).isApprovedForAll(msg.sender, address(this)) || IERC721(nftContract).getApproved(tokenId) == address(this), "Not approved");
 
         uint256 listingId = nextListingId++;
         uint256 endTime = listingType == ListingType.AUCTION ? block.timestamp + duration : 0;
@@ -274,27 +273,39 @@ contract Marketplace is
     }
 
     /**
-     * @dev Place a bid on an auction
+     * @dev Place a bid on an auction (ETH only)
      * @param listingId The listing ID to bid on
      */
     function placeBid(uint256 listingId) external payable whenNotPaused nonReentrant {
+        placeBid(listingId, 0);
+    }
+
+    /**
+     * @dev Place a bid on an auction
+     * @param listingId The listing ID to bid on
+     * @param bidAmount The bid amount (only for ERC20 tokens, ignored for ETH)
+     */
+    function placeBid(uint256 listingId, uint256 bidAmount) public payable whenNotPaused nonReentrant {
         Listing storage listing = listings[listingId];
         require(listing.isActive, "Listing not active");
         require(listing.listingType == ListingType.AUCTION, "Not an auction");
         require(block.timestamp < listing.endTime, "Auction ended");
         require(msg.sender != listing.seller, "Cannot bid on own item");
 
-        uint256 bidAmount;
+        uint256 finalBidAmount;
         
         if (listing.paymentToken == address(0)) {
-            bidAmount = msg.value;
+            finalBidAmount = msg.value;
+            require(bidAmount == 0, "Bid amount should be 0 for ETH auctions");
         } else {
-            bidAmount = msg.value; // This should be passed as parameter for ERC20 bids
-            require(IERC20(listing.paymentToken).transferFrom(msg.sender, address(this), bidAmount), "Bid transfer failed");
+            require(msg.value == 0, "Should not send ETH for ERC20 auctions");
+            require(bidAmount > 0, "Bid amount must be specified for ERC20 tokens");
+            finalBidAmount = bidAmount;
+            require(IERC20(listing.paymentToken).transferFrom(msg.sender, address(this), finalBidAmount), "Bid transfer failed");
         }
 
-        require(bidAmount > listing.highestBid, "Bid too low");
-        require(bidAmount >= listing.price, "Bid below starting price");
+        require(finalBidAmount > listing.highestBid, "Bid too low");
+        require(finalBidAmount >= listing.price, "Bid below starting price");
 
         // Refund previous highest bidder
         if (listing.highestBidder != address(0)) {
@@ -306,10 +317,10 @@ contract Marketplace is
         }
 
         listing.highestBidder = msg.sender;
-        listing.highestBid = bidAmount;
-        auctionBids[listingId][msg.sender] = bidAmount;
+        listing.highestBid = finalBidAmount;
+        auctionBids[listingId][msg.sender] = finalBidAmount;
 
-        emit BidPlaced(listingId, msg.sender, bidAmount);
+        emit BidPlaced(listingId, msg.sender, finalBidAmount);
     }
 
     /**
