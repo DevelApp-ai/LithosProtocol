@@ -14,3 +14,9 @@ docs/
 .env
 marketplace-frontend/
 lithos-api-service/
+
+# Foundry binaries (don't commit these)
+anvil
+cast
+chisel
+forge
