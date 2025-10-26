@@ -1,4 +1,4 @@
-[![Test Smart Contracts](https://github.com/DevelApp-ai/AetheriumPrime/actions/workflows/test.yml/badge.svg)](https://github.com/DevelApp-ai/AetheriumPrime/actions/workflows/test.yml)
+[![Test Smart Contracts](https://github.com/DevelApp-ai/LithosProtocol/actions/workflows/test.yml/badge.svg)](https://github.com/DevelApp-ai/LithosProtocol/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.19-blue.svg)](https://soliditylang.org/)
 [![Foundry](https://img.shields.io/badge/Built%20with-Foundry-FFDB1C.svg)](https://getfoundry.sh/)
@@ -17,7 +17,7 @@ LithosProtocol represents the next generation of blockchain gaming, where player
 
 ### Key Features
 
-- **Dual Token Economy**: Governance ($LITHOS) and Utility ($PLAY) tokens for balanced economics
+- **Dual Token Economy**: Governance ($GOV) and Utility ($PLAY) tokens for balanced economics
 - **NFT Asset System**: ERC-721 unique assets and ERC-1155 semi-fungible resources
 - **Play-to-Earn Mechanics**: Quest system, PvP rewards, and staking incentives
 - **Decentralized Marketplace**: Peer-to-peer trading with auction capabilities
@@ -29,12 +29,12 @@ LithosProtocol represents the next generation of blockchain gaming, where player
 
 | Contract | Type | Description |
 |----------|------|-------------|
-| `LithosGovernanceToken` | ERC-20 | Governance token with voting capabilities |
-| `LithosUtilityToken` | ERC-20 | Utility token for in-game transactions |
-| `LithosGameAssetNFT` | ERC-721 | Unique game assets (characters, weapons, land) |
-| `LithosGameResourceNFT` | ERC-1155 | Semi-fungible resources (materials, potions) |
-| `GameLogic` | Core | Play-to-earn mechanics and game state |
-| `Marketplace` | Trading | Decentralized asset marketplace |
+| `GovernanceToken` | ERC-20 | Governance token with voting capabilities ($GOV) |
+| `UtilityToken` | ERC-20 | Utility token for in-game transactions ($PLAY) |
+| `GameAssetNFT` | ERC-721 | Unique game assets (characters, weapons, land, armor, accessories) |
+| `GameResourceNFT` | ERC-1155 | Semi-fungible resources (crafting materials, potions, consumables) |
+| `GameLogic` | Core | Play-to-earn mechanics and game state management |
+| `Marketplace` | Trading | Decentralized asset marketplace with fixed price and auction support |
 | `StakingContract` | DeFi | Token and NFT staking with rewards |
 
 ### Technology Stack
@@ -58,15 +58,11 @@ LithosProtocol represents the next generation of blockchain gaming, where player
 
 ```bash
 # Clone the repository
-git clone https://github.com/DevelApp-ai/AetheriumPrime.git
-cd AetheriumPrime
+git clone https://github.com/DevelApp-ai/LithosProtocol.git
+cd LithosProtocol
 
 # Install dependencies
 forge install
-
-# Install frontend dependencies
-cd marketplace-frontend
-pnpm install
 ```
 
 ### Development
@@ -83,10 +79,6 @@ anvil
 
 # Deploy to local network
 forge script script/DeployContracts.s.sol --rpc-url http://localhost:8545 --broadcast
-
-# Start frontend development server
-cd marketplace-frontend
-pnpm run dev
 ```
 
 ## 🎯 Game Mechanics
@@ -113,14 +105,17 @@ Game assets evolve through gameplay:
 
 The dual-token model ensures economic sustainability:
 
-**$LITHOS (Governance Token)**
-- Total Supply: 1,000,000,000 tokens
+**$GOV (Governance Token)**
+- Total Supply: 1,000,000 tokens (1M * 10^18 wei)
 - Use Cases: Governance voting, premium features, staking rewards
-- Distribution: Community (40%), Team (20%), Ecosystem (25%), Treasury (15%)
+- Symbol: GOV
+- Name: "Aetherium Governance" (as per deployment configuration)
 
 **$PLAY (Utility Token)**
-- Dynamic Supply: Minted through gameplay, burned through crafting
+- Dynamic Supply: Initial supply 0, minted through gameplay
 - Use Cases: In-game purchases, repairs, marketplace fees
+- Symbol: PLAY
+- Name: "Aetherium Play" (as per deployment configuration)
 - Mechanics: Deflationary through token sinks
 
 ## 🛡️ Security
@@ -129,7 +124,7 @@ The dual-token model ensures economic sustainability:
 
 - **Smart Contract Audit**: Pending (prepared for professional audit)
 - **Security Features**: Reentrancy guards, access controls, pausable contracts
-- **Testing Coverage**: 95%+ test coverage across all contracts
+- **Testing Coverage**: Comprehensive test coverage for core contracts (GovernanceToken, UtilityToken, GameAssetNFT, GameResourceNFT, GameLogic)
 - **Upgrade Safety**: UUPS proxy pattern with admin controls
 
 ### Best Practices
@@ -162,12 +157,18 @@ const sdk = new LithosProtocolSDK({
   rpcUrl: 'https://sepolia.infura.io/v3/YOUR_KEY'
 });
 
+// Initialize SDK with MetaMask
+await sdk.initialize(window.ethereum);
+
 // List an NFT for sale
-await sdk.marketplace.createListing({
-  tokenContract: '0x...',
+await sdk.marketplace.listItem({
+  nftContract: '0x...',
   tokenId: 1,
-  price: ethers.utils.parseEther('0.1'),
-  duration: 86400 // 24 hours
+  amount: 1,
+  listingType: 0, // Fixed price
+  paymentToken: '0x0000000000000000000000000000000000000000', // ETH
+  price: ethers.parseEther('0.1'),
+  endTime: 0 // No end time for fixed price
 });
 ```
 
@@ -183,15 +184,16 @@ const lithos = new LithosProtocolSDK({
   network: 'sepolia',
   contracts: {
     marketplace: '0x...',
-    utilityToken: '0x...'
+    utilityToken: '0x...',
+    gameLogic: '0x...'
   }
 });
 
-// Connect wallet
-await lithos.wallet.connect();
+// Initialize with provider
+await lithos.initialize(window.ethereum);
 
 // Get player data
-const playerData = await lithos.game.getPlayerData(address);
+const playerData = await lithos.gameLogic.getPlayerData(address);
 ```
 
 ### Unity Integration
@@ -208,11 +210,13 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         web3Manager = GetComponent<LithosWeb3Manager>();
-        web3Manager.Initialize();
+        // Configure contract addresses in inspector
+        // The manager will initialize automatically
     }
     
     async void OnPlayerAction()
     {
+        // Complete a quest
         await web3Manager.CompleteQuest(questId);
     }
 }
@@ -222,12 +226,15 @@ public class GameManager : MonoBehaviour
 
 ### Distribution Schedule
 
-| Allocation | Percentage | Tokens | Vesting |
-|------------|------------|---------|---------|
-| Community Rewards | 40% | 400M | 4 years linear |
-| Team & Advisors | 20% | 200M | 4 years, 1 year cliff |
-| Ecosystem Fund | 25% | 250M | 5 years linear |
-| Treasury | 15% | 150M | DAO controlled |
+**$GOV Token (Governance)**
+- Total Supply: 1,000,000 tokens
+- Initial Distribution: To deployer/admin address
+- Future Distribution: Through governance proposals and voting mechanisms
+
+**$PLAY Token (Utility)**
+- Initial Supply: 0 tokens
+- Minting: Controlled by game mechanics and authorized roles
+- Distribution: Through gameplay, quests, and staking rewards
 
 ### Utility Mechanisms
 
@@ -241,31 +248,11 @@ public class GameManager : MonoBehaviour
 - Staking rewards: 5-15% APY depending on lock period
 - Tournament prizes: Weekly and monthly events
 
-## 🗺️ Roadmap
 
-### Phase 1: Foundation (Q1 2024) ✅
-- Smart contract development and testing
-- Security audit and optimization
-- Testnet deployment and validation
-
-### Phase 2: Marketplace Launch (Q2 2024) ✅
-- Web marketplace deployment
-- SDK and Unity integration
-- Community beta testing
-
-### Phase 3: Game Integration (Q3 2024)
-- Partner game integrations
-- Advanced P2E mechanics
-- Cross-game asset compatibility
-
-### Phase 4: Ecosystem Expansion (Q4 2024)
-- Multi-chain deployment
-- DAO governance launch
-- Third-party developer tools
 
 ## 🤝 Contributing
 
-We welcome contributions from the community! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+We welcome contributions from the community!
 
 ### Development Process
 

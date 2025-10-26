@@ -149,10 +149,7 @@ contract GameResourceNFT is
         
         // Check max supply if set
         if (resourceMetadata[tokenId].maxSupply > 0) {
-            require(
-                totalSupply(tokenId) + amount <= resourceMetadata[tokenId].maxSupply,
-                "Exceeds max supply"
-            );
+            require(totalSupply(tokenId) + amount <= resourceMetadata[tokenId].maxSupply, "Exceeds max supply");
         }
         
         _mint(to, tokenId, amount, "");
@@ -178,10 +175,7 @@ contract GameResourceNFT is
             
             // Check max supply if set
             if (resourceMetadata[tokenIds[i]].maxSupply > 0) {
-                require(
-                    totalSupply(tokenIds[i]) + amounts[i] <= resourceMetadata[tokenIds[i]].maxSupply,
-                    "Exceeds max supply"
-                );
+                require(totalSupply(tokenIds[i]) + amounts[i] <= resourceMetadata[tokenIds[i]].maxSupply, "Exceeds max supply");
             }
         }
         
