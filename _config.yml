@@ -1,0 +1,76 @@
+# Jekyll Configuration for LithosProtocol GitHub Pages
+title: LithosProtocol
+description: Built to Last. Built for Play. A comprehensive Web3 gaming ecosystem that combines NFTs, on-chain assets, and Play-to-Earn (P2E) mechanics.
+baseurl: ""
+url: "https://develapp-ai.github.io/LithosProtocol"
+
+# Theme configuration
+remote_theme: pages-themes/leap-day@v0.2.0
+plugins:
+- jekyll-remote-theme
+
+# Site settings
+author: DevelApp-ai
+logo: /assets/logos/LithosProtocol_Logo.png
+show_downloads: true
+
+# GitHub repository settings
+github:
+  repository_name: LithosProtocol
+  repository_url: https://github.com/DevelApp-ai/LithosProtocol
+  owner_name: DevelApp-ai
+  owner_url: https://github.com/DevelApp-ai
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# Collections for documentation organization
+collections:
+  docs:
+    output: true
+    permalink: /:collection/:name/
+
+# Navigation menu
+navigation:
+  - title: Home
+    url: /
+  - title: Architecture
+    url: /#architecture
+  - title: Game Mechanics
+    url: /#game-mechanics
+  - title: Security
+    url: /#security
+  - title: Marketplace
+    url: /#marketplace
+  - title: Development
+    url: /#development-tools
+
+# Exclude files from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/
+  - lib/
+  - bin/
+  - script/
+  - test/
+  - src/
+  - foundry.toml
+  - foundry.lock
+  - anvil
+  - cast
+  - chisel
+  - .git/
+  - .github/
+  - automated-tests/
+  - config/
+
+# Include files
+include:
+  - assets/
+  - web3-sdk/

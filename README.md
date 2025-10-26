@@ -1,4 +1,4 @@
-[![Test Smart Contracts](https://github.com/DevelApp-ai/AetheriumPrime/actions/workflows/test.yml/badge.svg)](https://github.com/DevelApp-ai/AetheriumPrime/actions/workflows/test.yml)
+[![Test Smart Contracts](https://github.com/DevelApp-ai/LithosProtocol/actions/workflows/test.yml/badge.svg)](https://github.com/DevelApp-ai/LithosProtocol/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.19-blue.svg)](https://soliditylang.org/)
 [![Foundry](https://img.shields.io/badge/Built%20with-Foundry-FFDB1C.svg)](https://getfoundry.sh/)
@@ -29,12 +29,12 @@ LithosProtocol represents the next generation of blockchain gaming, where player
 
 | Contract | Type | Description |
 |----------|------|-------------|
-| `LithosGovernanceToken` | ERC-20 | Governance token with voting capabilities |
-| `LithosUtilityToken` | ERC-20 | Utility token for in-game transactions |
-| `LithosGameAssetNFT` | ERC-721 | Unique game assets (characters, weapons, land) |
-| `LithosGameResourceNFT` | ERC-1155 | Semi-fungible resources (materials, potions) |
-| `GameLogic` | Core | Play-to-earn mechanics and game state |
-| `Marketplace` | Trading | Decentralized asset marketplace |
+| `GovernanceToken` | ERC-20 | Governance token with voting capabilities ($LITHOS) |
+| `UtilityToken` | ERC-20 | Utility token for in-game transactions ($PLAY) |
+| `GameAssetNFT` | ERC-721 | Unique game assets (characters, weapons, land, armor, accessories) |
+| `GameResourceNFT` | ERC-1155 | Semi-fungible resources (crafting materials, potions, consumables) |
+| `GameLogic` | Core | Play-to-earn mechanics and game state management |
+| `Marketplace` | Trading | Decentralized asset marketplace with fixed price and auction support |
 | `StakingContract` | DeFi | Token and NFT staking with rewards |
 
 ### Technology Stack
@@ -58,15 +58,11 @@ LithosProtocol represents the next generation of blockchain gaming, where player
 
 ```bash
 # Clone the repository
-git clone https://github.com/DevelApp-ai/AetheriumPrime.git
-cd AetheriumPrime
+git clone https://github.com/DevelApp-ai/LithosProtocol.git
+cd LithosProtocol
 
 # Install dependencies
 forge install
-
-# Install frontend dependencies
-cd marketplace-frontend
-pnpm install
 ```
 
 ### Development
@@ -83,10 +79,6 @@ anvil
 
 # Deploy to local network
 forge script script/DeployContracts.s.sol --rpc-url http://localhost:8545 --broadcast
-
-# Start frontend development server
-cd marketplace-frontend
-pnpm run dev
 ```
 
 ## 🎯 Game Mechanics
@@ -162,12 +154,18 @@ const sdk = new LithosProtocolSDK({
   rpcUrl: 'https://sepolia.infura.io/v3/YOUR_KEY'
 });
 
+// Initialize SDK with MetaMask
+await sdk.initialize(window.ethereum);
+
 // List an NFT for sale
-await sdk.marketplace.createListing({
-  tokenContract: '0x...',
+await sdk.marketplace.listItem({
+  nftContract: '0x...',
   tokenId: 1,
-  price: ethers.utils.parseEther('0.1'),
-  duration: 86400 // 24 hours
+  amount: 1,
+  listingType: 0, // Fixed price
+  paymentToken: '0x0000000000000000000000000000000000000000', // ETH
+  price: ethers.parseEther('0.1'),
+  endTime: 0 // No end time for fixed price
 });
 ```
 
@@ -183,15 +181,16 @@ const lithos = new LithosProtocolSDK({
   network: 'sepolia',
   contracts: {
     marketplace: '0x...',
-    utilityToken: '0x...'
+    utilityToken: '0x...',
+    gameLogic: '0x...'
   }
 });
 
-// Connect wallet
-await lithos.wallet.connect();
+// Initialize with provider
+await lithos.initialize(window.ethereum);
 
 // Get player data
-const playerData = await lithos.game.getPlayerData(address);
+const playerData = await lithos.gameLogic.getPlayerData(address);
 ```
 
 ### Unity Integration
