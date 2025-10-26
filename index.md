@@ -183,7 +183,7 @@ const playerData = await sdk.gameLogic.getPlayerData(address);
 ### Token Distribution
 
 **$GOV (Governance Token)**
-- Total Supply: 1,000,000 tokens 
+- Total Supply: 1,000,000 tokens (1M * 10^18 wei) 
 - Name: "Aetherium Governance"
 - Initial distribution to deployer address
 - Future distribution through governance mechanisms

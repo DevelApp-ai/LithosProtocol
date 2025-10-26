@@ -106,7 +106,7 @@ Game assets evolve through gameplay:
 The dual-token model ensures economic sustainability:
 
 **$GOV (Governance Token)**
-- Total Supply: 1,000,000 tokens (as configured in deployment)
+- Total Supply: 1,000,000 tokens (1M * 10^18 wei)
 - Use Cases: Governance voting, premium features, staking rewards
 - Symbol: GOV
 - Name: "Aetherium Governance" (as per deployment configuration)
@@ -124,7 +124,7 @@ The dual-token model ensures economic sustainability:
 
 - **Smart Contract Audit**: Pending (prepared for professional audit)
 - **Security Features**: Reentrancy guards, access controls, pausable contracts
-- **Testing Coverage**: 95%+ test coverage across all contracts
+- **Testing Coverage**: Comprehensive test coverage for core contracts (GovernanceToken, UtilityToken, GameAssetNFT, GameResourceNFT, GameLogic)
 - **Upgrade Safety**: UUPS proxy pattern with admin controls
 
 ### Best Practices
@@ -216,8 +216,8 @@ public class GameManager : MonoBehaviour
     
     async void OnPlayerAction()
     {
-        // Interact with game logic contract
-        await web3Manager.CallGameLogicFunction("completeQuest", questId);
+        // Complete a quest
+        await web3Manager.CompleteQuest(questId);
     }
 }
 ```
