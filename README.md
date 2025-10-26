@@ -17,7 +17,7 @@ LithosProtocol represents the next generation of blockchain gaming, where player
 
 ### Key Features
 
-- **Dual Token Economy**: Governance ($LITHOS) and Utility ($PLAY) tokens for balanced economics
+- **Dual Token Economy**: Governance ($GOV) and Utility ($PLAY) tokens for balanced economics
 - **NFT Asset System**: ERC-721 unique assets and ERC-1155 semi-fungible resources
 - **Play-to-Earn Mechanics**: Quest system, PvP rewards, and staking incentives
 - **Decentralized Marketplace**: Peer-to-peer trading with auction capabilities
@@ -29,7 +29,7 @@ LithosProtocol represents the next generation of blockchain gaming, where player
 
 | Contract | Type | Description |
 |----------|------|-------------|
-| `GovernanceToken` | ERC-20 | Governance token with voting capabilities ($LITHOS) |
+| `GovernanceToken` | ERC-20 | Governance token with voting capabilities ($GOV) |
 | `UtilityToken` | ERC-20 | Utility token for in-game transactions ($PLAY) |
 | `GameAssetNFT` | ERC-721 | Unique game assets (characters, weapons, land, armor, accessories) |
 | `GameResourceNFT` | ERC-1155 | Semi-fungible resources (crafting materials, potions, consumables) |
@@ -105,14 +105,17 @@ Game assets evolve through gameplay:
 
 The dual-token model ensures economic sustainability:
 
-**$LITHOS (Governance Token)**
-- Total Supply: 1,000,000,000 tokens
+**$GOV (Governance Token)**
+- Total Supply: 1,000,000 tokens (as configured in deployment)
 - Use Cases: Governance voting, premium features, staking rewards
-- Distribution: Community (40%), Team (20%), Ecosystem (25%), Treasury (15%)
+- Symbol: GOV
+- Name: "Aetherium Governance" (as per deployment configuration)
 
 **$PLAY (Utility Token)**
-- Dynamic Supply: Minted through gameplay, burned through crafting
+- Dynamic Supply: Initial supply 0, minted through gameplay
 - Use Cases: In-game purchases, repairs, marketplace fees
+- Symbol: PLAY
+- Name: "Aetherium Play" (as per deployment configuration)
 - Mechanics: Deflationary through token sinks
 
 ## 🛡️ Security
@@ -207,12 +210,14 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         web3Manager = GetComponent<LithosWeb3Manager>();
-        web3Manager.Initialize();
+        // Configure contract addresses in inspector
+        // The manager will initialize automatically
     }
     
     async void OnPlayerAction()
     {
-        await web3Manager.CompleteQuest(questId);
+        // Interact with game logic contract
+        await web3Manager.CallGameLogicFunction("completeQuest", questId);
     }
 }
 ```
@@ -221,12 +226,15 @@ public class GameManager : MonoBehaviour
 
 ### Distribution Schedule
 
-| Allocation | Percentage | Tokens | Vesting |
-|------------|------------|---------|---------|
-| Community Rewards | 40% | 400M | 4 years linear |
-| Team & Advisors | 20% | 200M | 4 years, 1 year cliff |
-| Ecosystem Fund | 25% | 250M | 5 years linear |
-| Treasury | 15% | 150M | DAO controlled |
+**$GOV Token (Governance)**
+- Total Supply: 1,000,000 tokens
+- Initial Distribution: To deployer/admin address
+- Future Distribution: Through governance proposals and voting mechanisms
+
+**$PLAY Token (Utility)**
+- Initial Supply: 0 tokens
+- Minting: Controlled by game mechanics and authorized roles
+- Distribution: Through gameplay, quests, and staking rewards
 
 ### Utility Mechanisms
 
@@ -264,7 +272,7 @@ public class GameManager : MonoBehaviour
 
 ## 🤝 Contributing
 
-We welcome contributions from the community! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+We welcome contributions from the community!
 
 ### Development Process
 

@@ -17,7 +17,7 @@ LithosProtocol represents the next generation of blockchain gaming, where player
 
 ### Key Features
 
-- **Dual Token Economy**: Governance ($LITHOS) and Utility ($PLAY) tokens for balanced economics
+- **Dual Token Economy**: Governance ($GOV) and Utility ($PLAY) tokens for balanced economics
 - **NFT Asset System**: ERC-721 unique assets and ERC-1155 semi-fungible resources
 - **Play-to-Earn Mechanics**: Quest system, PvP rewards, and staking incentives
 - **Decentralized Marketplace**: Peer-to-peer trading with auction capabilities
@@ -29,7 +29,7 @@ LithosProtocol represents the next generation of blockchain gaming, where player
 
 | Contract | Type | Description |
 |----------|------|-------------|
-| `GovernanceToken` | ERC-20 | Governance token with voting capabilities ($LITHOS) |
+| `GovernanceToken` | ERC-20 | Governance token with voting capabilities ($GOV) |
 | `UtilityToken` | ERC-20 | Utility token for in-game transactions ($PLAY) |
 | `GameAssetNFT` | ERC-721 | Unique game assets (characters, weapons, land, armor, accessories) |
 | `GameResourceNFT` | ERC-1155 | Semi-fungible resources (crafting materials, potions, consumables) |
@@ -182,16 +182,16 @@ const playerData = await sdk.gameLogic.getPlayerData(address);
 
 ### Token Distribution
 
-**$LITHOS (Governance Token)**
-- Total Supply: 1,000,000,000 tokens
-- Community Rewards: 40% (400M)
-- Team & Advisors: 20% (200M)
-- Ecosystem Fund: 25% (250M)
-- Treasury: 15% (150M)
+**$GOV (Governance Token)**
+- Total Supply: 1,000,000 tokens 
+- Name: "Aetherium Governance"
+- Initial distribution to deployer address
+- Future distribution through governance mechanisms
 
 **$PLAY (Utility Token)**
-- Dynamic supply model
-- Minted through gameplay rewards
+- Name: "Aetherium Play"
+- Initial supply: 0 tokens
+- Minted through gameplay rewards and authorized roles
 - Burned through crafting and repairs
 - Deflationary mechanisms built-in
 
