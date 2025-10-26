@@ -195,20 +195,7 @@ const playerData = await sdk.gameLogic.getPlayerData(address);
 - Burned through crafting and repairs
 - Deflationary mechanisms built-in
 
-## 🗺️ Development Roadmap
 
-### Current Status
-- ✅ Core smart contract development
-- ✅ Comprehensive testing suite
-- ✅ Security audit preparation
-- ✅ Web3 SDK implementation
-- ✅ GitHub Pages documentation
-
-### Upcoming Features
-- Multi-chain deployment
-- Advanced game mechanics
-- Cross-game asset compatibility
-- DAO governance implementation
 
 ---
 

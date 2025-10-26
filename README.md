@@ -248,27 +248,7 @@ public class GameManager : MonoBehaviour
 - Staking rewards: 5-15% APY depending on lock period
 - Tournament prizes: Weekly and monthly events
 
-## 🗺️ Roadmap
 
-### Phase 1: Foundation (Q1 2024) ✅
-- Smart contract development and testing
-- Security audit and optimization
-- Testnet deployment and validation
-
-### Phase 2: Marketplace Launch (Q2 2024) ✅
-- Web marketplace deployment
-- SDK and Unity integration
-- Community beta testing
-
-### Phase 3: Game Integration (Q3 2024)
-- Partner game integrations
-- Advanced P2E mechanics
-- Cross-game asset compatibility
-
-### Phase 4: Ecosystem Expansion (Q4 2024)
-- Multi-chain deployment
-- DAO governance launch
-- Third-party developer tools
 
 ## 🤝 Contributing
 
