@@ -155,10 +155,7 @@ contract AdvancedTokenSinks is
         require(!playerCosmetics[msg.sender][itemId], "Already owned");
         
         // Burn tokens
-        require(
-            utilityToken.transferFrom(msg.sender, address(this), item.price),
-            "Transfer failed"
-        );
+        require(utilityToken.transferFrom(msg.sender, address(this), item.price), "Transfer failed");
         _burnTokens("cosmetics", item.price);
         
         // Grant cosmetic to player
@@ -203,10 +200,7 @@ contract AdvancedTokenSinks is
         require(tournament.currentParticipants < tournament.maxParticipants, "Tournament full");
         
         // Pay entry fee (50% burned, 50% to prize pool)
-        require(
-            utilityToken.transferFrom(msg.sender, address(this), tournament.entryFee),
-            "Transfer failed"
-        );
+        require(utilityToken.transferFrom(msg.sender, address(this), tournament.entryFee), "Transfer failed");
         
         uint256 burnAmount = tournament.entryFee / 2;
         uint256 prizeAmount = tournament.entryFee - burnAmount;
@@ -261,10 +255,7 @@ contract AdvancedTokenSinks is
         uint256 totalCost = rental.dailyRate * rentalDays;
         
         // Pay rental fee (10% burned, 90% to owner)
-        require(
-            utilityToken.transferFrom(msg.sender, address(this), totalCost),
-            "Transfer failed"
-        );
+        require(utilityToken.transferFrom(msg.sender, address(this), totalCost), "Transfer failed");
         
         uint256 burnAmount = totalCost / 10;
         uint256 ownerAmount = totalCost - burnAmount;
@@ -312,10 +303,7 @@ contract AdvancedTokenSinks is
         require(feature.isActive, "Feature not available");
         
         // Burn tokens for convenience feature
-        require(
-            utilityToken.transferFrom(msg.sender, address(this), feature.price),
-            "Transfer failed"
-        );
+        require(utilityToken.transferFrom(msg.sender, address(this), feature.price), "Transfer failed");
         _burnTokens("convenience", feature.price);
         
         // Extend or set expiry

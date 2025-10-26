@@ -125,10 +125,7 @@ contract DynamicTokenomics is
         uint256 dailyEarned,
         uint256 dailyBurned
     ) external onlyRole(ORACLE_ROLE) {
-        require(
-            block.timestamp >= economicMetrics.lastUpdateTimestamp + economicUpdateInterval,
-            "Too early to update"
-        );
+        require(block.timestamp >= economicMetrics.lastUpdateTimestamp + economicUpdateInterval, "Too early to update");
         
         economicMetrics.totalPlayersActive = totalPlayers;
         economicMetrics.totalTokensInCirculation = tokensInCirculation;
