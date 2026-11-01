@@ -18,7 +18,7 @@ jobs:
     name: Foundry project
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: check
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -94,7 +94,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '18'
 
@@ -126,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: check
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -149,7 +149,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: check
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -173,7 +173,7 @@ jobs:
     needs: [check, integration-tests]
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
 
@@ -209,4 +209,3 @@ jobs:
           echo "❌ Tests failed! Please check the logs."
           echo "## ❌ Pipeline Status: FAILURE" >> $GITHUB_STEP_SUMMARY
           echo "Some tests have failed. Please review the error logs and fix the issues." >> $GITHUB_STEP_SUMMARY
-
