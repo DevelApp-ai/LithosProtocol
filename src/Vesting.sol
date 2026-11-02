@@ -42,6 +42,10 @@ contract Vesting is
     // Storage
     IERC20 public governanceToken;
     mapping(uint256 => VestingSchedule) public vestingSchedules;
+
+    function getVestingSchedule(uint256 scheduleId) external view returns (VestingSchedule memory) {
+        return vestingSchedules[scheduleId];
+    }
     mapping(address => uint256[]) public beneficiarySchedules;
     
     uint256 public nextScheduleId;
@@ -115,7 +119,7 @@ contract Vesting is
         uint256 cliffDuration,
         uint256 vestingDuration,
         string memory allocationName
-    ) external onlyRole(VESTING_ADMIN_ROLE) nonReentrant returns (uint256) {
+    ) public onlyRole(VESTING_ADMIN_ROLE) nonReentrant returns (uint256) {
         require(beneficiary != address(0), "Invalid beneficiary");
         require(amount > 0, "Amount must be positive");
         require(vestingDuration > 0, "Vesting duration must be positive");
@@ -157,7 +161,7 @@ contract Vesting is
         uint256 cliffDuration,
         uint256 vestingDuration,
         string memory allocationName
-    ) external onlyRole(VESTING_ADMIN_ROLE) nonReentrant {
+    ) external onlyRole(VESTING_ADMIN_ROLE) {
         require(beneficiaries.length == amounts.length, "Arrays length mismatch");
         require(vestingDuration > 0, "Vesting duration must be positive");
         require(cliffDuration <= vestingDuration, "Cliff cannot exceed vesting duration");

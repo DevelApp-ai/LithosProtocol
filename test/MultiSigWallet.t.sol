@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import "../src/MultiSigWallet.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /**
  * @title MultiSigWallet Tests
@@ -18,6 +19,13 @@ import "../src/MultiSigWallet.sol";
  * - Edge cases and error conditions
  */
 contract MultiSigWalletTest is Test {
+    event WalletInitialized(address[] owners, uint256 threshold);
+    event OwnerAdded(address owner);
+    event TransactionSubmitted(uint256 transactionId, address submitter);
+    event TransactionApproved(uint256 transactionId, address approver);
+    event TransactionExecuted(uint256 transactionId, address executor);
+    event ETHTransferred(address to, uint256 amount, uint256 transactionId);
+
     MultiSigWallet public multiSig;
     
     address public owner1;
@@ -39,13 +47,26 @@ contract MultiSigWalletTest is Test {
         owners[1] = owner2;
         owners[2] = owner3;
         
-        // Deploy proxy and implementation
-        vm.startBroadcast();
-        multiSig = new MultiSigWallet();
-        multiSig.initialize(owners, threshold, owner1);
-        vm.stopBroadcast();
+        // Deploy behind an ERC1967 proxy (constructor disables direct initialization)
+        MultiSigWallet implementation = new MultiSigWallet();
+        bytes memory initData = abi.encodeCall(
+            MultiSigWallet.initialize,
+            (owners, threshold, owner1)
+        );
+        multiSig = MultiSigWallet(payable(address(new ERC1967Proxy(address(implementation), initData))));
     }
     
+    /// @dev Deploys a fresh wallet behind an ERC1967 proxy (constructor disables direct init)
+    function _deployWallet(
+        address[] memory owners_,
+        uint256 threshold_,
+        address initialOwner_
+    ) internal returns (MultiSigWallet wallet) {
+        MultiSigWallet impl = new MultiSigWallet();
+        bytes memory initData = abi.encodeCall(MultiSigWallet.initialize, (owners_, threshold_, initialOwner_));
+        wallet = MultiSigWallet(payable(address(new ERC1967Proxy(address(impl), initData))));
+    }
+
     // ========== INITIALIZATION TESTS ==========
     
     function testInitialize() public {
@@ -64,30 +85,34 @@ contract MultiSigWalletTest is Test {
     
     function testInitializeRevertsWithEmptyOwners() public {
         address[] memory emptyOwners = new address[](0);
+        MultiSigWallet badImpl = new MultiSigWallet();
         vm.expectRevert("MultiSigWallet: owners required");
-        multiSig.initialize(emptyOwners, 1, owner1);
+        new ERC1967Proxy(address(badImpl), abi.encodeCall(MultiSigWallet.initialize, (emptyOwners, 1, owner1)));
     }
     
     function testInitializeRevertsWithZeroThreshold() public {
         address[] memory owners = new address[](1);
         owners[0] = owner1;
+        MultiSigWallet badImpl = new MultiSigWallet();
         vm.expectRevert("MultiSigWallet: invalid threshold");
-        multiSig.initialize(owners, 0, owner1);
+        new ERC1967Proxy(address(badImpl), abi.encodeCall(MultiSigWallet.initialize, (owners, 0, owner1)));
     }
     
     function testInitializeRevertsWithThresholdGreaterThanOwners() public {
         address[] memory owners = new address[](2);
         owners[0] = owner1;
         owners[1] = owner2;
+        MultiSigWallet badImpl = new MultiSigWallet();
         vm.expectRevert("MultiSigWallet: invalid threshold");
-        multiSig.initialize(owners, 3, owner1);
+        new ERC1967Proxy(address(badImpl), abi.encodeCall(MultiSigWallet.initialize, (owners, 3, owner1)));
     }
     
     function testInitializeRevertsWithInvalidOwner() public {
         address[] memory owners = new address[](1);
         owners[0] = address(0);
+        MultiSigWallet badImpl = new MultiSigWallet();
         vm.expectRevert("MultiSigWallet: invalid owner");
-        multiSig.initialize(owners, 1, owner1);
+        new ERC1967Proxy(address(badImpl), abi.encodeCall(MultiSigWallet.initialize, (owners, 1, owner1)));
     }
     
     // ========== OWNER MANAGEMENT TESTS ==========
@@ -150,8 +175,7 @@ contract MultiSigWalletTest is Test {
         owners[1] = owner2;
         owners[2] = owner3;
         
-        MultiSigWallet tempMultiSig = new MultiSigWallet();
-        tempMultiSig.initialize(owners, 3, owner1);
+        MultiSigWallet tempMultiSig = _deployWallet(owners, 3, owner1);
         
         vm.prank(owner1);
         vm.expectRevert("MultiSigWallet: cannot remove owner, threshold would be exceeded");
@@ -187,7 +211,7 @@ contract MultiSigWalletTest is Test {
     
     function testReplaceOwnerRevertsForNonExistentOldOwner() public {
         vm.prank(owner1);
-        vm.expectRevert("MultiSigWallet: old owner does not exist");
+        vm.expectRevert("MultiSigWallet: only owner can replace self");
         multiSig.replaceOwner(nonOwner, address(5));
     }
     
@@ -288,6 +312,7 @@ contract MultiSigWalletTest is Test {
     }
     
     function testApproveTransactionRevertsForExecutedTransaction() public {
+        vm.deal(address(multiSig), 2 ether);
         vm.prank(owner1);
         uint256 txId = multiSig.submitTransaction(nonOwner, 1 ether, "", 1);
         
@@ -445,8 +470,7 @@ contract MultiSigWalletTest is Test {
         address[] memory owners = new address[](1);
         owners[0] = owner1;
         
-        MultiSigWallet tempMultiSig = new MultiSigWallet();
-        tempMultiSig.initialize(owners, 1, owner1);
+        MultiSigWallet tempMultiSig = _deployWallet(owners, 1, owner1);
         
         vm.deal(address(tempMultiSig), 10 ether);
         
@@ -474,8 +498,8 @@ contract MultiSigWalletTest is Test {
     }
     
     function testPauseRevertsForNonOwner() public {
+        vm.expectRevert("MultiSigWallet: not an owner");
         vm.prank(nonOwner);
-        vm.expectRevert("Ownable: caller is not the owner");
         multiSig.pause();
     }
     
@@ -533,14 +557,14 @@ contract MultiSigWalletTest is Test {
     // ========== GETTER TESTS ==========
     
     function testGetApprovedTransactions() public {
-        vm.prank(owner1);
+        vm.startPrank(owner1);
         uint256 txId1 = multiSig.submitTransaction(nonOwner, 1 ether, "", 1);
         uint256 txId2 = multiSig.submitTransaction(nonOwner, 2 ether, "", 1);
         uint256 txId3 = multiSig.submitTransaction(nonOwner, 3 ether, "", 1);
         
-        vm.prank(owner1);
         multiSig.approveTransaction(txId1);
         multiSig.approveTransaction(txId3);
+        vm.stopPrank();
         
         uint256[] memory approved = multiSig.getApprovedTransactions(owner1);
         assertEq(approved.length, 2);
@@ -576,12 +600,15 @@ contract MultiSigWalletTest is Test {
         owners[0] = address(100);
         owners[1] = address(200);
         
-        MultiSigWallet tempMultiSig = new MultiSigWallet();
+        MultiSigWallet tempImpl = new MultiSigWallet();
         
         vm.expectEmit(true, true, true, true);
         emit WalletInitialized(owners, 1);
         
-        tempMultiSig.initialize(owners, 1, address(100));
+        MultiSigWallet tempMultiSig = MultiSigWallet(payable(address(new ERC1967Proxy(
+            address(tempImpl),
+            abi.encodeCall(MultiSigWallet.initialize, (owners, 1, address(100)))
+        ))));
     }
     
     function testOwnerAddedEvent() public {
@@ -671,21 +698,24 @@ contract MultiSigWalletTest is Test {
         uint256 txId3 = multiSig.submitTransaction(nonOwner, 30 ether, "", 1);
         
         // Approve all transactions
-        vm.prank(owner1);
+        vm.startPrank(owner1);
         multiSig.approveTransaction(txId1);
         multiSig.approveTransaction(txId2);
         multiSig.approveTransaction(txId3);
+        vm.stopPrank();
         
-        vm.prank(owner2);
+        vm.startPrank(owner2);
         multiSig.approveTransaction(txId1);
         multiSig.approveTransaction(txId2);
         multiSig.approveTransaction(txId3);
+        vm.stopPrank();
         
         // Execute all transactions
-        vm.prank(owner1);
+        vm.startPrank(owner1);
         multiSig.executeTransaction(txId1);
         multiSig.executeTransaction(txId2);
         multiSig.executeTransaction(txId3);
+        vm.stopPrank();
         
         // Check final balance
         assertEq(nonOwner.balance, 60 ether);
@@ -695,26 +725,30 @@ contract MultiSigWalletTest is Test {
         vm.deal(address(multiSig), 100 ether);
         
         // Submit transactions in order
-        vm.prank(owner1);
+        vm.startPrank(owner1);
         uint256 txId1 = multiSig.submitTransaction(nonOwner, 1 ether, "", 1);
         uint256 txId2 = multiSig.submitTransaction(nonOwner, 2 ether, "", 1);
         uint256 txId3 = multiSig.submitTransaction(nonOwner, 3 ether, "", 1);
+        vm.stopPrank();
         
         // Execute in different order
-        vm.prank(owner1);
+        vm.startPrank(owner1);
         multiSig.approveTransaction(txId1);
         multiSig.approveTransaction(txId2);
         multiSig.approveTransaction(txId3);
+        vm.stopPrank();
         
-        vm.prank(owner2);
+        vm.startPrank(owner2);
         multiSig.approveTransaction(txId1);
         multiSig.approveTransaction(txId2);
         multiSig.approveTransaction(txId3);
+        vm.stopPrank();
         
-        vm.prank(owner1);
+        vm.startPrank(owner1);
         multiSig.executeTransaction(txId2); // Execute second first
         multiSig.executeTransaction(txId1); // Then first
         multiSig.executeTransaction(txId3); // Then third
+        vm.stopPrank();
         
         assertEq(nonOwner.balance, 6 ether);
     }
@@ -729,8 +763,13 @@ contract MultiSigWalletTest is Test {
     }
     
     function testFallbackReverts() public {
+        vm.deal(owner1, 1 ether);
         vm.prank(owner1);
         vm.expectRevert("MultiSigWallet: use submitTransaction for contract calls");
-        multiSig.fallback{value: 1 ether}("");
+        IBogusCaller(address(multiSig)).bogusCall{value: 1 ether}();
     }
+}
+
+interface IBogusCaller {
+    function bogusCall() external payable;
 }

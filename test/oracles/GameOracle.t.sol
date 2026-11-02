@@ -41,7 +41,7 @@ contract GameOracleTest is Test {
     }
     
     function testInitialization() public {
-        assertEq(oracle.owner(), owner);
+        assertTrue(oracle.hasRole(oracle.DEFAULT_ADMIN_ROLE(), owner));
         assertEq(oracle.requiredConfirmations(), 2);
     }
     
@@ -96,15 +96,15 @@ contract GameOracleTest is Test {
     
     function testReportQuestCompletion() public {
         uint256 questId = 123;
+        bytes32 questHash = keccak256(abi.encodePacked(player1, questId, block.timestamp));
         
         vm.startPrank(oracle1);
         vm.expectEmit(true, true, true, false);
-        emit QuestCompletionReported(any, player1, questId);
+        emit QuestCompletionReported(questHash, player1, questId);
         
         oracle.reportQuestCompletion(player1, questId, 100 * 10**18);
         vm.stopPrank();
         
-        bytes32 questHash = keccak256(abi.encodePacked(player1, questId, block.timestamp));
         GameOracle.QuestCompletion memory completion = oracle.getQuestCompletion(questHash);
         assertEq(completion.player, player1);
         assertEq(completion.questId, questId);

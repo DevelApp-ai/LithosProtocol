@@ -169,7 +169,7 @@ library LibAddress {
     function _bubbleSortAscending(address[] memory addresses) internal pure {
         for (uint256 i = 0; i < addresses.length - 1; i++) {
             for (uint256 j = 0; j < addresses.length - i - 1; j++) {
-                if (uint256(addresses[j]) > uint256(addresses[j + 1])) {
+                if (uint256(uint160(addresses[j])) > uint256(uint160(addresses[j + 1]))) {
                     (addresses[j], addresses[j + 1]) = (addresses[j + 1], addresses[j]);
                 }
             }
@@ -181,7 +181,7 @@ library LibAddress {
     function _bubbleSortDescending(address[] memory addresses) internal pure {
         for (uint256 i = 0; i < addresses.length - 1; i++) {
             for (uint256 j = 0; j < addresses.length - i - 1; j++) {
-                if (uint256(addresses[j]) < uint256(addresses[j + 1])) {
+                if (uint256(uint160(addresses[j])) < uint256(uint160(addresses[j + 1]))) {
                     (addresses[j], addresses[j + 1]) = (addresses[j + 1], addresses[j]);
                 }
             }
@@ -359,41 +359,6 @@ library LibAddress {
 
     // ====================== PROXY OPERATIONS ======================
 
-    /// @notice Gets the implementation address of an EIP-1967 proxy
-    /// @param proxy The address of the proxy contract
-    /// @return The address of the implementation contract
-    function getImplementationAddress(
-        address proxy
-    ) internal view returns (address) {
-        bytes32 implementationSlot;
-        assembly {
-            implementationSlot := sload(IMPLEMENTATION_SLOT)
-        }
-        return address(uint160(implementationSlot));
-    }
-
-    /// @notice Gets the admin address of an EIP-1967 proxy
-    /// @param proxy The address of the proxy contract
-    /// @return The address of the admin
-    function getAdminAddress(address proxy) internal view returns (address) {
-        bytes32 adminSlot;
-        assembly {
-            adminSlot := sload(ADMIN_SLOT)
-        }
-        return address(uint160(adminSlot));
-    }
-
-    /// @notice Checks if an address is an EIP-1967 proxy
-    /// @param addr The address to check
-    /// @return Whether the address is an EIP-1967 proxy
-    function isEIP1967Proxy(address addr) internal view returns (bool) {
-        bytes32 implementationSlot;
-        assembly {
-            implementationSlot := sload(IMPLEMENTATION_SLOT)
-        }
-        return implementationSlot != bytes32(0);
-    }
-
     // ====================== ADDRESS GENERATION ======================
 
     /// @notice Creates a deterministic address from a seed
@@ -434,22 +399,22 @@ library LibAddress {
         bytes32 temp = bytes32(uint256(uint160(addr)));
         bytes memory buffer = abi.encodePacked(
             "0x",
-            _toHexString(uint8(temp >> 120)),
-            _toHexString(uint8(temp >> 112)),
-            _toHexString(uint8(temp >> 104)),
-            _toHexString(uint8(temp >> 96)),
-            _toHexString(uint8(temp >> 88)),
-            _toHexString(uint8(temp >> 80)),
-            _toHexString(uint8(temp >> 72)),
-            _toHexString(uint8(temp >> 64)),
-            _toHexString(uint8(temp >> 56)),
-            _toHexString(uint8(temp >> 48)),
-            _toHexString(uint8(temp >> 40)),
-            _toHexString(uint8(temp >> 32)),
-            _toHexString(uint8(temp >> 24)),
-            _toHexString(uint8(temp >> 16)),
-            _toHexString(uint8(temp >> 8)),
-            _toHexString(uint8(temp))
+            _toHexString(uint8(uint256(temp >> 120))),
+            _toHexString(uint8(uint256(temp >> 112))),
+            _toHexString(uint8(uint256(temp >> 104))),
+            _toHexString(uint8(uint256(temp >> 96))),
+            _toHexString(uint8(uint256(temp >> 88))),
+            _toHexString(uint8(uint256(temp >> 80))),
+            _toHexString(uint8(uint256(temp >> 72))),
+            _toHexString(uint8(uint256(temp >> 64))),
+            _toHexString(uint8(uint256(temp >> 56))),
+            _toHexString(uint8(uint256(temp >> 48))),
+            _toHexString(uint8(uint256(temp >> 40))),
+            _toHexString(uint8(uint256(temp >> 32))),
+            _toHexString(uint8(uint256(temp >> 24))),
+            _toHexString(uint8(uint256(temp >> 16))),
+            _toHexString(uint8(uint256(temp >> 8))),
+            _toHexString(uint8(uint256(temp)))
         );
         return string(buffer);
     }
@@ -496,22 +461,22 @@ library LibAddress {
     function isValidChecksum(address addr) internal pure returns (bool) {
         bytes32 temp = bytes32(uint256(uint160(addr)));
         bytes memory addressBytes = abi.encodePacked(
-            _toHexString(uint8(temp >> 120)),
-            _toHexString(uint8(temp >> 112)),
-            _toHexString(uint8(temp >> 104)),
-            _toHexString(uint8(temp >> 96)),
-            _toHexString(uint8(temp >> 88)),
-            _toHexString(uint8(temp >> 80)),
-            _toHexString(uint8(temp >> 72)),
-            _toHexString(uint8(temp >> 64)),
-            _toHexString(uint8(temp >> 56)),
-            _toHexString(uint8(temp >> 48)),
-            _toHexString(uint8(temp >> 40)),
-            _toHexString(uint8(temp >> 32)),
-            _toHexString(uint8(temp >> 24)),
-            _toHexString(uint8(temp >> 16)),
-            _toHexString(uint8(temp >> 8)),
-            _toHexString(uint8(temp))
+            _toHexString(uint8(uint256(temp >> 120))),
+            _toHexString(uint8(uint256(temp >> 112))),
+            _toHexString(uint8(uint256(temp >> 104))),
+            _toHexString(uint8(uint256(temp >> 96))),
+            _toHexString(uint8(uint256(temp >> 88))),
+            _toHexString(uint8(uint256(temp >> 80))),
+            _toHexString(uint8(uint256(temp >> 72))),
+            _toHexString(uint8(uint256(temp >> 64))),
+            _toHexString(uint8(uint256(temp >> 56))),
+            _toHexString(uint8(uint256(temp >> 48))),
+            _toHexString(uint8(uint256(temp >> 40))),
+            _toHexString(uint8(uint256(temp >> 32))),
+            _toHexString(uint8(uint256(temp >> 24))),
+            _toHexString(uint8(uint256(temp >> 16))),
+            _toHexString(uint8(uint256(temp >> 8))),
+            _toHexString(uint8(uint256(temp)))
         );
 
         bytes32 hash = keccak256(addressBytes);
@@ -519,12 +484,12 @@ library LibAddress {
             bytes1 char = addressBytes[i + 2];
             if (char >= 'A' && char <= 'F') {
                 // Uppercase letter
-                if ((hash >> (196 - i * 4)) & 0x0F) >= 8) {
+                if ((uint256(hash >> (196 - i * 4)) & 0x0F) >= 8) {
                     return false;
                 }
             } else if (char >= 'a' && char <= 'f') {
                 // Lowercase letter
-                if ((hash >> (196 - i * 4)) & 0x0F) < 8) {
+                if ((uint256(hash >> (196 - i * 4)) & 0x0F) < 8) {
                     return false;
                 }
             }
@@ -542,22 +507,22 @@ library LibAddress {
         bytes32 temp = bytes32(uint256(uint160(addr)));
         bytes memory addressBytes = abi.encodePacked(
             "0x",
-            _toHexString(uint8(temp >> 120)),
-            _toHexString(uint8(temp >> 112)),
-            _toHexString(uint8(temp >> 104)),
-            _toHexString(uint8(temp >> 96)),
-            _toHexString(uint8(temp >> 88)),
-            _toHexString(uint8(temp >> 80)),
-            _toHexString(uint8(temp >> 72)),
-            _toHexString(uint8(temp >> 64)),
-            _toHexString(uint8(temp >> 56)),
-            _toHexString(uint8(temp >> 48)),
-            _toHexString(uint8(temp >> 40)),
-            _toHexString(uint8(temp >> 32)),
-            _toHexString(uint8(temp >> 24)),
-            _toHexString(uint8(temp >> 16)),
-            _toHexString(uint8(temp >> 8)),
-            _toHexString(uint8(temp))
+            _toHexString(uint8(uint256(temp >> 120))),
+            _toHexString(uint8(uint256(temp >> 112))),
+            _toHexString(uint8(uint256(temp >> 104))),
+            _toHexString(uint8(uint256(temp >> 96))),
+            _toHexString(uint8(uint256(temp >> 88))),
+            _toHexString(uint8(uint256(temp >> 80))),
+            _toHexString(uint8(uint256(temp >> 72))),
+            _toHexString(uint8(uint256(temp >> 64))),
+            _toHexString(uint8(uint256(temp >> 56))),
+            _toHexString(uint8(uint256(temp >> 48))),
+            _toHexString(uint8(uint256(temp >> 40))),
+            _toHexString(uint8(uint256(temp >> 32))),
+            _toHexString(uint8(uint256(temp >> 24))),
+            _toHexString(uint8(uint256(temp >> 16))),
+            _toHexString(uint8(uint256(temp >> 8))),
+            _toHexString(uint8(uint256(temp)))
         );
 
         bytes32 hash = keccak256(addressBytes);
@@ -567,7 +532,7 @@ library LibAddress {
 
         for (uint256 i = 0; i < 20; i++) {
             bytes1 char = addressBytes[i + 2];
-            uint8 nibble = uint8((hash >> (196 - i * 4)) & 0x0F);
+            uint8 nibble = uint8(uint256(hash >> (196 - i * 4)) & 0x0F);
 
             if (char >= '0' && char <= '9') {
                 checksumAddress[i + 2] = char;

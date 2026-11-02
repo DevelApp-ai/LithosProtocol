@@ -96,6 +96,22 @@ contract MarketplaceV2 is
     mapping(uint256 => mapping(address => uint256)) public auctionBids; // listingId => bidder => amount
     mapping(uint256 => ListingMetadata) public listingMetadata;
 
+    function getListing(uint256 listingId) external view returns (Listing memory) {
+        return listings[listingId];
+    }
+
+    function getDutchAuction(uint256 listingId) external view returns (DutchAuction memory) {
+        return dutchAuctions[listingId];
+    }
+
+    function getBulkListing(uint256 bulkId) external view returns (BulkListing memory) {
+        return bulkListings[bulkId];
+    }
+
+    function getListingMetadata(uint256 listingId) external view returns (ListingMetadata memory) {
+        return listingMetadata[listingId];
+    }
+
     // Search index
     mapping(uint256 => uint256[]) public categoryListings; // categoryId => listingIds
     mapping(uint256 => uint256[]) public rarityListings; // rarity => listingIds
@@ -422,7 +438,7 @@ contract MarketplaceV2 is
      * @param listingId The listing ID
      * @return The current price
      */
-    function getDutchAuctionPrice(uint256 listingId) external view returns (uint256) {
+    function getDutchAuctionPrice(uint256 listingId) public view returns (uint256) {
         DutchAuction memory auction = dutchAuctions[listingId];
         require(auction.isActive, "Auction not active");
         require(block.timestamp <= auction.endTime, "Auction ended");
@@ -676,7 +692,7 @@ contract MarketplaceV2 is
     function buyFromBulkListing(
         uint256 bulkId,
         uint256[] memory itemIndices
-    ) external payable whenNotPrank nonReentrant {
+    ) external payable nonReentrant {
         BulkListing storage bulk = bulkListings[bulkId];
         require(bulk.isActive, "Bulk listing not active");
         require(bulk.listingType == ListingType.FIXED_PRICE, "Only fixed price bulk listings supported");
@@ -938,7 +954,7 @@ contract MarketplaceV2 is
      * @dev Place a bid on an auction
      * @param listingId The listing ID to bid on
      */
-    function placeBid(uint256 listingId) external payable whenNotPaused nonReentrant {
+    function placeBid(uint256 listingId) external payable whenNotPaused {
         placeBid(listingId, 0);
     }
 

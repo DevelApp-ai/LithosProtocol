@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
@@ -13,6 +14,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 contract PlayerDataStorage is 
     Initializable,
     AccessControlUpgradeable,
+    PausableUpgradeable,
     UUPSUpgradeable
 {
     bytes32 public constant GAME_ROLE = keccak256("GAME_ROLE");
@@ -69,6 +71,8 @@ contract PlayerDataStorage is
         __AccessControl_init();
         __UUPSUpgradeable_init();
 
+        __Pausable_init();
+
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
         _grantRole(UPGRADER_ROLE, defaultAdmin);
     }
@@ -79,6 +83,14 @@ contract PlayerDataStorage is
         override
     {}
 
+    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
+    }
+
     /**
      * @dev Register a new player
      * @param player The player address
@@ -87,7 +99,7 @@ contract PlayerDataStorage is
     function registerPlayer(
         address player, 
         string memory playerName
-    ) external onlyRole(GAME_ROLE) {
+    ) external onlyRole(GAME_ROLE) whenNotPaused {
         require(!playerData[player].isRegistered, "Player already registered");
         
         playerData[player] = PlayerData({
@@ -250,6 +262,11 @@ contract PlayerDataStorage is
      * @param experience Total experience points
      * @return The calculated level
      */
+    /// @notice Public helper exposing the level formula (used by tests and tooling)
+    function calculateLevel(uint256 experience) external pure returns (uint256) {
+        return _calculateLevel(experience);
+    }
+
     function _calculateLevel(uint256 experience) internal pure returns (uint256) {
         if (experience < 100) return 1;
         

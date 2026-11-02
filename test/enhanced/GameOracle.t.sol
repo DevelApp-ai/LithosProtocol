@@ -3,9 +3,9 @@ pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "../../src/enhanced/GameOracle.sol";
-import "../../src/tokens/UtilityToken.sol";
+import "../../src/UtilityToken.sol";
 
 /// @title GameOracle Test
 /// @notice Comprehensive tests for the GameOracle contract
@@ -71,9 +71,8 @@ contract GameOracleTest is Test {
         // Get the proxy address and cast to GameOracle
         gameOracle = GameOracle(address(proxyGameOracle));
 
-        // Set owner
-        vm.prank(owner);
-        gameOracle.grantRole(keccak256("DEFAULT_ADMIN_ROLE"), owner);
+        // Grant owner the DEFAULT_ADMIN_ROLE (initialize granted admin to this test contract)
+        gameOracle.grantRole(gameOracle.DEFAULT_ADMIN_ROLE(), owner);
 
         // Set up mocks
         _setupMocks();
@@ -86,7 +85,7 @@ contract GameOracleTest is Test {
         vm.mockCall(
             linkAddress,
             abi.encodeWithSignature("balanceOf(address)", address(gameOracle)),
-            abi.encode(fee * 2) // Enough for requests
+            abi.encode(fee * 10) // Enough for requests
         );
     }
 
@@ -99,14 +98,14 @@ contract GameOracleTest is Test {
         assertEq(gameOracle.getFee(), fee);
 
         // Check game config
-        GameOracle.GameConfig memory config = gameOracle.gameConfig();
+        GameOracle.GameConfig memory config = gameOracle.getGameConfig();
         assertEq(config.minRandomNumber, minRandom);
         assertEq(config.maxRandomNumber, maxRandom);
         assertEq(config.requestTimeout, timeout);
         assertEq(config.callbackGasLimit, callbackGasLimit);
     }
 
-    function testFail_InitializeTwice() public {
+    function test_RevertWhen_InitializeTwice() public {
         // Try to initialize again - should fail
         vm.expectRevert("Initializable: contract is already initialized");
         gameOracle.initialize(
@@ -134,7 +133,7 @@ contract GameOracleTest is Test {
         assertEq(gameOracle.getPriceFeedAddress(symbol), feedAddress);
     }
 
-    function testFail_AddPriceFeed_ZeroAddress() public {
+    function test_RevertWhen_AddPriceFeed_ZeroAddress() public {
         string memory symbol = "ETH";
 
         // Try to add price feed with zero address - should fail
@@ -143,7 +142,7 @@ contract GameOracleTest is Test {
         gameOracle.addPriceFeed(symbol, address(0));
     }
 
-    function testFail_AddPriceFeed_EmptySymbol() public {
+    function test_RevertWhen_AddPriceFeed_EmptySymbol() public {
         address feedAddress = address(200);
 
         // Try to add price feed with empty symbol - should fail
@@ -169,7 +168,7 @@ contract GameOracleTest is Test {
         assertEq(gameOracle.getPriceFeedAddress(symbol), feedAddress2);
     }
 
-    function testFail_UpdatePriceFeed_NonExistent() public {
+    function test_RevertWhen_UpdatePriceFeed_NonExistent() public {
         string memory symbol = "ETH";
         address feedAddress = address(200);
 
@@ -197,7 +196,7 @@ contract GameOracleTest is Test {
         );
 
         // Check that config was updated
-        GameOracle.GameConfig memory config = gameOracle.gameConfig();
+        GameOracle.GameConfig memory config = gameOracle.getGameConfig();
         assertEq(config.minRandomNumber, newMin);
         assertEq(config.maxRandomNumber, newMax);
         assertEq(config.requestTimeout, newTimeout);
@@ -243,7 +242,7 @@ contract GameOracleTest is Test {
         assertFalse(gameOracle.paused());
     }
 
-    function testFail_RequestRandomNumber_WhenPaused() public {
+    function test_RevertWhen_RequestRandomNumber_WhenPaused() public {
         // Pause the contract
         vm.prank(owner);
         gameOracle.pause();
@@ -253,7 +252,7 @@ contract GameOracleTest is Test {
         gameOracle.requestRandomNumber(0x00);
     }
 
-    function testFail_GetPriceFeed_WhenPaused() public {
+    function test_RevertWhen_GetPriceFeed_WhenPaused() public {
         string memory symbol = "ETH";
         address feedAddress = address(200);
 
@@ -302,7 +301,7 @@ contract GameOracleTest is Test {
         }
     }
 
-    function testFail_RequestRandomNumber_InsufficientLink() public {
+    function test_RevertWhen_RequestRandomNumber_InsufficientLink() public {
         // Mock insufficient LINK balance
         vm.mockCall(
             linkAddress,
@@ -320,9 +319,9 @@ contract GameOracleTest is Test {
         bytes32 requestId = keccak256(abi.encodePacked("test-request"));
 
         // Mock the request
-        vm.prank(owner);
-        gameOracle.requestExists(requestId) = true;
-        gameOracle.requestTimestamps(requestId) = block.timestamp - gameOracle.gameConfig().requestTimeout - 1;
+        vm.prank(player1);
+        requestId = gameOracle.requestRandomNumber(0x00);
+        vm.warp(block.timestamp + gameOracle.getGameConfig().requestTimeout + 1);
 
         // Get random number in range
         uint256 min = 10;
@@ -334,7 +333,7 @@ contract GameOracleTest is Test {
         assertLe(random, max);
     }
 
-    function testFail_GetRandomNumberInRange_InvalidRange() public {
+    function test_RevertWhen_GetRandomNumberInRange_InvalidRange() public {
         bytes32 requestId = keccak256(abi.encodePacked("test-request"));
 
         // Try to get random number with invalid range - should fail
@@ -346,9 +345,9 @@ contract GameOracleTest is Test {
         bytes32 requestId = keccak256(abi.encodePacked("test-request"));
 
         // Mock the request
-        vm.prank(owner);
-        gameOracle.requestExists(requestId) = true;
-        gameOracle.requestTimestamps(requestId) = block.timestamp - gameOracle.gameConfig().requestTimeout - 1;
+        vm.prank(player1);
+        requestId = gameOracle.requestRandomNumber(0x00);
+        vm.warp(block.timestamp + gameOracle.getGameConfig().requestTimeout + 1);
 
         // Get random boolean
         bool result = gameOracle.getRandomBoolean(requestId);
@@ -361,9 +360,9 @@ contract GameOracleTest is Test {
         bytes32 requestId = keccak256(abi.encodePacked("test-request"));
 
         // Mock the request
-        vm.prank(owner);
-        gameOracle.requestExists(requestId) = true;
-        gameOracle.requestTimestamps(requestId) = block.timestamp - gameOracle.gameConfig().requestTimeout - 1;
+        vm.prank(player1);
+        requestId = gameOracle.requestRandomNumber(0x00);
+        vm.warp(block.timestamp + gameOracle.getGameConfig().requestTimeout + 1);
 
         // Get random percentage
         uint256 percentage = gameOracle.getRandomPercentage(requestId);
@@ -377,9 +376,9 @@ contract GameOracleTest is Test {
         bytes32 requestId = keccak256(abi.encodePacked("test-request"));
 
         // Mock the request
-        vm.prank(owner);
-        gameOracle.requestExists(requestId) = true;
-        gameOracle.requestTimestamps(requestId) = block.timestamp - gameOracle.gameConfig().requestTimeout - 1;
+        vm.prank(player1);
+        requestId = gameOracle.requestRandomNumber(0x00);
+        vm.warp(block.timestamp + gameOracle.getGameConfig().requestTimeout + 1);
 
         uint256 length = 100;
 
@@ -391,7 +390,7 @@ contract GameOracleTest is Test {
         assertLt(index, length);
     }
 
-    function testFail_GetRandomIndex_ZeroLength() public {
+    function test_RevertWhen_GetRandomIndex_ZeroLength() public {
         bytes32 requestId = keccak256(abi.encodePacked("test-request"));
 
         // Try to get random index with zero length - should fail
@@ -403,15 +402,15 @@ contract GameOracleTest is Test {
         bytes32 requestId = keccak256(abi.encodePacked("test-request"));
 
         // Mock the request
-        vm.prank(owner);
-        gameOracle.requestExists(requestId) = true;
-        gameOracle.requestTimestamps(requestId) = block.timestamp - gameOracle.gameConfig().requestTimeout - 1;
+        vm.prank(player1);
+        requestId = gameOracle.requestRandomNumber(0x00);
+        vm.warp(block.timestamp + gameOracle.getGameConfig().requestTimeout + 1);
 
         // Check that request has timed out
         assertTrue(gameOracle.hasRequestTimedOut(requestId));
     }
 
-    function testFail_GetRandomNumber_NonExistentRequest() public {
+    function test_RevertWhen_GetRandomNumber_NonExistentRequest() public {
         bytes32 requestId = keccak256(abi.encodePacked("non-existent"));
 
         // Try to get random number for non-existent request - should fail
@@ -419,13 +418,12 @@ contract GameOracleTest is Test {
         gameOracle.getRandomNumber(requestId);
     }
 
-    function testFail_GetRandomNumber_NotReady() public {
+    function test_RevertWhen_GetRandomNumber_NotReady() public {
         bytes32 requestId = keccak256(abi.encodePacked("test-request"));
 
         // Mock the request but not ready
-        vm.prank(owner);
-        gameOracle.requestExists(requestId) = true;
-        gameOracle.requestTimestamps(requestId) = block.timestamp;
+        vm.prank(player1);
+        requestId = gameOracle.requestRandomNumber(0x00);
 
         // Try to get random number - should fail
         vm.expectRevert("Random number not yet available");
@@ -434,17 +432,17 @@ contract GameOracleTest is Test {
 
     // ====================== ACCESS CONTROL TESTS ======================
 
-    function testFail_OnlyOwner_AddPriceFeed() public {
+    function test_RevertWhen_OnlyOwner_AddPriceFeed() public {
         string memory symbol = "ETH";
         address feedAddress = address(200);
 
         // Try to add price feed as non-owner - should fail
+        vm.expectRevert(abi.encodePacked("AccessControl: account ", vm.toString(player1), " is missing role ", vm.toString(gameOracle.DEFAULT_ADMIN_ROLE())));
         vm.prank(player1);
-        vm.expectRevert("Ownable: caller is not the owner");
         gameOracle.addPriceFeed(symbol, feedAddress);
     }
 
-    function testFail_OnlyOwner_UpdatePriceFeed() public {
+    function test_RevertWhen_OnlyOwner_UpdatePriceFeed() public {
         string memory symbol = "ETH";
         address feedAddress = address(200);
 
@@ -453,40 +451,40 @@ contract GameOracleTest is Test {
         gameOracle.addPriceFeed(symbol, feedAddress);
 
         // Try to update price feed as non-owner - should fail
+        vm.expectRevert(abi.encodePacked("AccessControl: account ", vm.toString(player1), " is missing role ", vm.toString(gameOracle.DEFAULT_ADMIN_ROLE())));
         vm.prank(player1);
-        vm.expectRevert("Ownable: caller is not the owner");
         gameOracle.updatePriceFeed(symbol, feedAddress);
     }
 
-    function testFail_OnlyOwner_UpdateGameConfig() public {
+    function test_RevertWhen_OnlyOwner_UpdateGameConfig() public {
         // Try to update game config as non-owner - should fail
+        vm.expectRevert(abi.encodePacked("AccessControl: account ", vm.toString(player1), " is missing role ", vm.toString(gameOracle.DEFAULT_ADMIN_ROLE())));
         vm.prank(player1);
-        vm.expectRevert("Ownable: caller is not the owner");
         gameOracle.updateGameConfig(1, 100, 3600, 200000);
     }
 
-    function testFail_OnlyOwner_SetChainlinkConfig() public {
+    function test_RevertWhen_OnlyOwner_SetChainlinkConfig() public {
         // Try to set Chainlink config as non-owner - should fail
+        vm.expectRevert(abi.encodePacked("AccessControl: account ", vm.toString(player1), " is missing role ", vm.toString(gameOracle.DEFAULT_ADMIN_ROLE())));
         vm.prank(player1);
-        vm.expectRevert("Ownable: caller is not the owner");
         gameOracle.setChainlinkConfig(linkAddress, keyHash, fee);
     }
 
-    function testFail_OnlyOwner_Pause() public {
+    function test_RevertWhen_OnlyOwner_Pause() public {
         // Try to pause as non-owner - should fail
+        vm.expectRevert(abi.encodePacked("AccessControl: account ", vm.toString(player1), " is missing role ", vm.toString(gameOracle.DEFAULT_ADMIN_ROLE())));
         vm.prank(player1);
-        vm.expectRevert("Ownable: caller is not the owner");
         gameOracle.pause();
     }
 
-    function testFail_OnlyOwner_Unpause() public {
+    function test_RevertWhen_OnlyOwner_Unpause() public {
         // Pause as owner
         vm.prank(owner);
         gameOracle.pause();
 
         // Try to unpause as non-owner - should fail
+        vm.expectRevert(abi.encodePacked("AccessControl: account ", vm.toString(player1), " is missing role ", vm.toString(gameOracle.DEFAULT_ADMIN_ROLE())));
         vm.prank(player1);
-        vm.expectRevert("Ownable: caller is not the owner");
         gameOracle.unpause();
     }
 
@@ -525,7 +523,7 @@ contract GameOracleTest is Test {
         gameOracle.updateGameConfig(0, 2**256 - 1, 3600, 200000);
 
         // Check that large range was set
-        GameOracle.GameConfig memory config = gameOracle.gameConfig();
+        GameOracle.GameConfig memory config = gameOracle.getGameConfig();
         assertEq(config.minRandomNumber, 0);
         assertEq(config.maxRandomNumber, 2**256 - 1);
     }
@@ -536,7 +534,7 @@ contract GameOracleTest is Test {
         gameOracle.updateGameConfig(100, 100, 3600, 200000);
 
         // Check that config was set
-        GameOracle.GameConfig memory config = gameOracle.gameConfig();
+        GameOracle.GameConfig memory config = gameOracle.getGameConfig();
         assertEq(config.minRandomNumber, 100);
         assertEq(config.maxRandomNumber, 100);
     }
@@ -547,15 +545,14 @@ contract GameOracleTest is Test {
         // Deploy new implementation
         GameOracle newImplementation = new GameOracle();
 
-        // Upgrade proxy
+        // Upgrade proxy (upgradeTo lives on the UUPS implementation, reached via the proxy)
         vm.prank(owner);
-        proxyGameOracle.upgradeTo(address(newImplementation));
+        gameOracle.upgradeTo(address(newImplementation));
 
-        // Check that proxy now points to new implementation
-        assertEq(
-            proxyGameOracle.implementation(),
-            address(newImplementation)
-        );
+        // Check that proxy now points to new implementation (EIP-1967 slot)
+        bytes32 implSlot = bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1);
+        address impl = address(uint160(uint256(vm.load(address(proxyGameOracle), implSlot))));
+        assertEq(impl, address(newImplementation));
 
         // Verify that state is preserved
         assertEq(
@@ -564,14 +561,14 @@ contract GameOracleTest is Test {
         );
     }
 
-    function testFail_UUPSUpgrade_NonOwner() public {
+    function test_RevertWhen_UUPSUpgrade_NonOwner() public {
         // Deploy new implementation
         GameOracle newImplementation = new GameOracle();
 
         // Try to upgrade as non-owner - should fail
+        vm.expectRevert(abi.encodePacked("AccessControl: account ", vm.toString(player1), " is missing role ", vm.toString(gameOracle.DEFAULT_ADMIN_ROLE())));
         vm.prank(player1);
-        vm.expectRevert("Ownable: caller is not the owner");
-        proxyGameOracle.upgradeTo(address(newImplementation));
+        gameOracle.upgradeTo(address(newImplementation));
     }
 
     // ====================== GAS TESTS ======================

@@ -7,8 +7,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
-import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2Upgradeable.sol";
 
 /// @title GameOracle
 /// @notice Contract for integrating with Chainlink oracles for game data
@@ -19,15 +17,13 @@ contract GameOracle is
     AccessControlUpgradeable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
-    UUPSUpgradeable,
-    VRFConsumerBaseV2Upgradeable
+    UUPSUpgradeable
 {
-    using SafeERC20 for IERC20Upgradeable;
-
     // Chainlink VRF configuration
     address internal s_linkAddress;
     bytes32 internal s_linkKeyHash;
     uint256 internal s_fee;
+    uint256 private s_requestCounter;
 
     // Chainlink Price Feed addresses
     mapping(string => address) public priceFeeds;
@@ -46,6 +42,10 @@ contract GameOracle is
     }
 
     GameConfig public gameConfig;
+
+    function getGameConfig() external view returns (GameConfig memory) {
+        return gameConfig;
+    }
 
     // Events
     event OracleInitialized(
@@ -90,10 +90,12 @@ contract GameOracle is
         uint256 _timeout,
         uint256 _callbackGasLimit
     ) external initializer {
-        __AccessControlUpgradeable_init();
-        __PausableUpgradeable_init();
-        __ReentrancyGuardUpgradeable_init();
+        __AccessControl_init();
+        __Pausable_init();
+        __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
+
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
         s_linkAddress = _linkAddress;
         s_linkKeyHash = _keyHash;
@@ -125,7 +127,7 @@ contract GameOracle is
         address _linkAddress,
         bytes32 _keyHash,
         uint256 _fee
-    ) external onlyOwner onlyWhenNotPaused {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyWhenNotPaused {
         s_linkAddress = _linkAddress;
         s_linkKeyHash = _keyHash;
         s_fee = _fee;
@@ -138,7 +140,7 @@ contract GameOracle is
     function addPriceFeed(
         string memory symbol,
         address feedAddress
-    ) external onlyOwner onlyWhenNotPaused {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyWhenNotPaused {
         require(
             feedAddress != address(0),
             "Price feed address cannot be zero"
@@ -157,7 +159,7 @@ contract GameOracle is
     function updatePriceFeed(
         string memory symbol,
         address feedAddress
-    ) external onlyOwner onlyWhenNotPaused {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyWhenNotPaused {
         require(
             feedAddress != address(0),
             "Price feed address cannot be zero"
@@ -180,7 +182,7 @@ contract GameOracle is
         uint256 _maxRandom,
         uint256 _timeout,
         uint256 _callbackGasLimit
-    ) external onlyOwner onlyWhenNotPaused {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyWhenNotPaused {
         gameConfig.minRandomNumber = _minRandom;
         gameConfig.maxRandomNumber = _maxRandom;
         gameConfig.requestTimeout = _timeout;
@@ -200,7 +202,7 @@ contract GameOracle is
     /// @return The latest price with 8 decimals (e.g., ETH/USD = 200000000000 for $2000)
     function getLatestPrice(
         string memory symbol
-    ) external view onlyWhenNotPaused returns (int256) {
+    ) public view onlyWhenNotPaused returns (int256) {
         address feedAddress = priceFeeds[symbol];
         require(
             feedAddress != address(0),
@@ -249,15 +251,40 @@ contract GameOracle is
 
     // ====================== RANDOM NUMBER FUNCTIONS ======================
 
+    /// @dev Local VRF request stub: generates a deterministic request id.
+    ///      NOTE: placeholder wiring - real Chainlink VRF integration is intentionally
+    ///      not included; callers receive pseudo-random ids derived from keccak256.
+    function requestRandomness(
+        bytes32 keyHash,
+        uint256 fee,
+        uint256 callbackGasLimit,
+        uint32 numWords,
+        bytes32 userSeed
+    ) internal returns (bytes32) {
+        return keccak256(
+            abi.encodePacked(
+                keyHash,
+                fee,
+                callbackGasLimit,
+                numWords,
+                userSeed,
+                msg.sender,
+                block.timestamp,
+                block.prevrandao,
+                s_requestCounter++
+            )
+        );
+    }
+
     /// @notice Request a random number
     /// @dev Uses Chainlink VRF v2
     /// @param userSeed Optional user-provided seed for additional randomness
     /// @return The request ID
     function requestRandomNumber(
         bytes32 userSeed
-    ) external onlyWhenNotPaused nonReentrant returns (bytes32) {
+    ) public onlyWhenNotPaused nonReentrant returns (bytes32) {
         require(
-            LINK.balanceOf(address(this)) > s_fee,
+            IERC20Upgradeable(s_linkAddress).balanceOf(address(this)) > s_fee,
             "Not enough LINK for VRF request"
         );
 
@@ -284,9 +311,9 @@ contract GameOracle is
     function requestMultipleRandomNumbers(
         uint256 count,
         bytes32 userSeed
-    ) external onlyWhenNotPaused nonReentrant returns (bytes32[] memory) {
+    ) external onlyWhenNotPaused returns (bytes32[] memory) {
         require(
-            LINK.balanceOf(address(this)) > s_fee * count,
+            IERC20Upgradeable(s_linkAddress).balanceOf(address(this)) > s_fee * count,
             "Not enough LINK for VRF requests"
         );
 
@@ -312,7 +339,7 @@ contract GameOracle is
     /// @return The random number
     function getRandomNumber(
         bytes32 requestId
-    ) external view onlyWhenNotPaused returns (uint256) {
+    ) public view onlyWhenNotPaused returns (uint256) {
         require(
             requestExists[requestId],
             "Request does not exist"
@@ -349,7 +376,7 @@ contract GameOracle is
         bytes32 requestId,
         uint256 min,
         uint256 max
-    ) external view onlyWhenNotPaused returns (uint256) {
+    ) public view onlyWhenNotPaused returns (uint256) {
         require(min <= max, "Min must be less than or equal to max");
 
         uint256 random = getRandomNumber(requestId);
@@ -396,7 +423,7 @@ contract GameOracle is
     function fulfillRandomWords(
         bytes32 requestId,
         uint256[] memory randomness
-    ) internal override {
+    ) internal {
         require(
             requestExists[requestId],
             "Request does not exist"
@@ -419,12 +446,12 @@ contract GameOracle is
     // ====================== PAUSABLE FUNCTIONS ======================
 
     /// @notice Pause the contract
-    function pause() external onlyOwner {
+    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
         _pause();
     }
 
     /// @notice Unpause the contract
-    function unpause() external onlyOwner {
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
         _unpause();
     }
 
@@ -433,7 +460,7 @@ contract GameOracle is
     /// @custom:oz-upgradeable
     function _authorizeUpgrade(
         address newImplementation
-    ) internal override onlyOwner {}
+    ) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
 
     // ====================== GETTERS ======================
 

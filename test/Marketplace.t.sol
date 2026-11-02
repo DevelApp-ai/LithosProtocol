@@ -85,6 +85,12 @@ contract MarketplaceTest is Test {
         gameAssetNFT.grantRole(gameAssetNFT.MINTER_ROLE(), owner);
         gameResourceNFT.grantRole(gameResourceNFT.MINTER_ROLE(), owner);
         vm.stopPrank();
+        
+        // Fund test participants
+        vm.deal(seller, 1000 ether);
+        vm.deal(buyer, 1000 ether);
+        vm.deal(bidder1, 1000 ether);
+        vm.deal(bidder2, 1000 ether);
     }
     
     function testInitialization() public {
@@ -123,7 +129,7 @@ contract MarketplaceTest is Test {
         
         assertEq(listingId, 1);
         
-        Marketplace.Listing memory listing = marketplace.listings(listingId);
+        Marketplace.Listing memory listing = marketplace.getListing(listingId);
         assertEq(listing.listingId, listingId);
         assertEq(listing.seller, seller);
         assertEq(listing.nftContract, address(gameAssetNFT));
@@ -175,7 +181,7 @@ contract MarketplaceTest is Test {
         
         assertEq(listingId, 1);
         
-        Marketplace.Listing memory listing = marketplace.listings(listingId);
+        Marketplace.Listing memory listing = marketplace.getListing(listingId);
         assertEq(listing.amount, 50);
         assertEq(uint256(listing.assetType), uint256(Marketplace.AssetType.ERC1155));
         
@@ -217,13 +223,14 @@ contract MarketplaceTest is Test {
         assertEq(gameAssetNFT.ownerOf(tokenId), buyer);
         
         // Check seller received payment (minus fee)
-        assertEq(seller.balance, 97500000000000000); // 97.5 ETH
+        assertEq(seller.balance, 1000 ether + 975 * 10**17); // 1000 dealt + 97.5 ETH proceeds
         
         // Check fee recipient received fee
-        assertEq(feeRecipient.balance, 25000000000000000); // 2.5 ETH
+        assertEq(feeRecipient.balance, 25 * 10**17); // 2.5 ETH fee
         
         // Check listing inactive
-        assertFalse(marketplace.listings(listingId).isActive);
+        Marketplace.Listing memory _purchased = marketplace.getListing(listingId);
+        assertFalse(_purchased.isActive);
         
         vm.stopPrank();
     }
@@ -289,7 +296,7 @@ contract MarketplaceTest is Test {
         );
         vm.stopPrank();
         
-        Marketplace.Listing memory listing = marketplace.listings(listingId);
+        Marketplace.Listing memory listing = marketplace.getListing(listingId);
         assertEq(uint256(listing.listingType), uint256(Marketplace.ListingType.AUCTION));
         assertEq(listing.endTime, block.timestamp + 1 days);
     }
@@ -324,7 +331,7 @@ contract MarketplaceTest is Test {
         
         marketplace.placeBid{value: 15 * 10**18}(listingId);
         
-        Marketplace.Listing memory listing = marketplace.listings(listingId);
+        Marketplace.Listing memory listing = marketplace.getListing(listingId);
         assertEq(listing.highestBidder, bidder1);
         assertEq(listing.highestBid, 15 * 10**18);
         
@@ -337,13 +344,12 @@ contract MarketplaceTest is Test {
         
         marketplace.placeBid{value: 20 * 10**18}(listingId);
         
-        listing = marketplace.listings(listingId);
+        listing = marketplace.getListing(listingId);
         assertEq(listing.highestBidder, bidder2);
         assertEq(listing.highestBid, 20 * 10**18);
         
         // Check first bidder refunded
-        assertEq(bidder1.balance, 15 * 10**18);
-        
+        assertEq(bidder1.balance, 1000 ether); // refunded after being outbid
         vm.stopPrank();
     }
     
@@ -419,7 +425,7 @@ contract MarketplaceTest is Test {
         assertEq(gameAssetNFT.ownerOf(tokenId), bidder1);
         
         // Check seller received payment minus fee
-        assertEq(seller.balance, (15 * 10**18) - (15 * 10**18 * 250) / 10000);
+        assertEq(seller.balance, 1000 ether + (15 * 10**18) - (15 * 10**18 * 250) / 10000);
         
         // Check fee recipient received fee
         assertEq(feeRecipient.balance, (15 * 10**18 * 250) / 10000);
@@ -457,7 +463,8 @@ contract MarketplaceTest is Test {
         
         marketplace.cancelListing(listingId);
         
-        assertFalse(marketplace.listings(listingId).isActive);
+        Marketplace.Listing memory _cancelled = marketplace.getListing(listingId);
+        assertFalse(_cancelled.isActive);
         
         // NFT should be returned
         assertEq(gameAssetNFT.ownerOf(tokenId), seller);
@@ -498,7 +505,7 @@ contract MarketplaceTest is Test {
         marketplace.cancelListing(listingId);
         
         // Check bidder refunded
-        assertEq(bidder1.balance, 15 * 10**18);
+        assertEq(bidder1.balance, 1000 ether);
         
         vm.stopPrank();
     }
@@ -629,7 +636,7 @@ contract MarketplaceTest is Test {
             0
         );
         
-        Marketplace.Listing memory listing = marketplace.listings(listingId);
+        Marketplace.Listing memory listing = marketplace.getListing(listingId);
         assertEq(listing.price, price);
         
         vm.stopPrank();

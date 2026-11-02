@@ -64,6 +64,15 @@ contract StakingContract is
     // Mappings
     mapping(uint256 => StakingPool) public stakingPools;
     mapping(uint256 => mapping(address => UserStake)) public userStakes;
+
+    /// @notice Explicit struct getters (public mapping auto-getters return tuples)
+    function getStakingPool(uint256 poolId) external view returns (StakingPool memory) {
+        return stakingPools[poolId];
+    }
+
+    function getUserStake(uint256 poolId, address user) external view returns (UserStake memory) {
+        return userStakes[poolId][user];
+    }
     mapping(uint256 => uint256[]) public poolStakedNFTs; // poolId => tokenIds
     mapping(uint256 => address) public nftOwners; // tokenId => owner
 
