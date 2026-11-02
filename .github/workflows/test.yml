@@ -17,29 +17,76 @@ jobs:
 
     name: Foundry project
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v5
         with:
           submodules: recursive
 
+      # Pin to the stable release the suite passes under (342/342 locally).
+      # The nightly toolchain broke the build in ~43s on the runner; the
+      # other jobs in this workflow already use the stable toolchain.
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: v1.8.7
 
       - name: Show Foundry config
         run: forge config
 
       - name: Run Forge build
         run: |
+          set -o pipefail
           forge --version
-          forge build --sizes
+          forge build --sizes 2>&1 | tee forge-build.log
         id: build
 
       - name: Run Forge tests
         run: |
-          forge test -vvv --gas-report
+          set -o pipefail
+          forge test -vvv --gas-report 2>&1 | tee forge-test.log
         id: test
+
+      - name: Post failure details to PR
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            let body = 'Foundry build/test failed.';
+            try {
+              const jobs = await github.rest.actions.listJobsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: context.runId
+              });
+              const job = jobs.data.jobs.find(j => j.name === context.job) || jobs.data.jobs[0];
+              if (job) {
+                body = '**' + job.name + '** failed. Step results:';
+                for (const step of job.steps || []) {
+                  body += '\n- ' + step.name + ': **' + step.conclusion + '**';
+                }
+              }
+            } catch (e) {
+              body += '\n(job details unavailable: ' + e + ')';
+            }
+            for (const name of ['forge-build.log', 'forge-test.log']) {
+              try {
+                const log = fs.readFileSync(name, 'utf8');
+                const tail = log.length > 9000 ? log.slice(-9000) : log;
+                body += '\n\n<details><summary>' + name + ' (tail)</summary>\n\n~~~\n' + tail + '\n~~~\n</details>';
+              } catch (e) {
+                // file not produced means the step did not run; skip
+              }
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body
+            });
 
       - name: Run Forge coverage
         run: |
