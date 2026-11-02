@@ -548,9 +548,18 @@ library LibMath {
         uint256 periods
     ) internal pure returns (uint256) {
         uint256 factor = percentageOf(1e18, rate) + 1e18;
-        uint256 numerator = sub(1e18, pow(factor, -periods));
         uint256 denominator = sub(factor, 1e18);
-        return mul(payment, div(numerator, denominator)) / 1e18;
+        // (1 + r)^-periods in 1e18 fixed point: pow() cannot express
+        // negative exponents in uint256, so divide by (1 + r) repeatedly
+        // instead of raising to a negative power.
+        uint256 invFactor = 1e18;
+        for (uint256 i = 0; i < periods; i++) {
+            invFactor = div(mul(invFactor, 1e18), factor);
+        }
+        uint256 numerator = sub(1e18, invFactor);
+        // Annuity factor (1 - (1 + r)^-periods) / r, in 1e18 fixed point
+        uint256 annuityFactor = div(mul(numerator, 1e18), denominator);
+        return mul(payment, annuityFactor) / 1e18;
     }
 
     // ====================== BIT OPERATIONS ======================
