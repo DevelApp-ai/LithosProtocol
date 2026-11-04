@@ -58,7 +58,7 @@ contract MarketplaceV2 is
     error NotAuction();
     error NotFixedPrice();
     error AuctionNotActive();
-    error AuctionEnded();
+    error AuctionOver();
     error AuctionNotEnded();
     error SelfPurchase();
     error NotAuthorized();
@@ -594,7 +594,7 @@ contract MarketplaceV2 is
     function getDutchAuctionPrice(uint256 listingId) public view returns (uint256) {
         DutchAuction memory auction = dutchAuctions[listingId];
         if (!auction.isActive) revert AuctionNotActive();
-        if (block.timestamp > auction.endTime) revert AuctionEnded();
+        if (block.timestamp > auction.endTime) revert AuctionOver();
 
         uint256 elapsed = block.timestamp - auction.startTime;
         uint256 totalDuration = auction.endTime - auction.startTime;
@@ -615,7 +615,7 @@ contract MarketplaceV2 is
         if (!listing.isActive) revert ListingNotActive();
         if (listing.listingType != ListingType.DUTCH_AUCTION) revert NotDutchAuction();
         if (msg.sender == listing.seller) revert SelfPurchase();
-        if (block.timestamp > listing.endTime) revert AuctionEnded();
+        if (block.timestamp > listing.endTime) revert AuctionOver();
 
         uint256 currentPrice = getDutchAuctionPrice(listingId);
         uint256 totalPrice = currentPrice * listing.amount;
@@ -962,7 +962,7 @@ contract MarketplaceV2 is
         Listing storage listing = listings[listingId];
         if (!listing.isActive) revert ListingNotActive();
         if (listing.listingType != ListingType.AUCTION) revert NotAuction();
-        if (block.timestamp >= listing.endTime) revert AuctionEnded();
+        if (block.timestamp >= listing.endTime) revert AuctionOver();
         if (msg.sender == listing.seller) revert SelfPurchase();
 
         uint256 finalBidAmount;
