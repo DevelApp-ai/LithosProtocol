@@ -37,7 +37,7 @@ contract PlayerDataStorageTest is Test {
     }
     
     function testInitialization() public {
-        assertEq(playerDataStorage.owner(), owner);
+        assertTrue(playerDataStorage.hasRole(playerDataStorage.DEFAULT_ADMIN_ROLE(), owner));
         assertFalse(playerDataStorage.isPlayerRegistered(player1));
     }
     
@@ -45,7 +45,7 @@ contract PlayerDataStorageTest is Test {
         vm.startPrank(gameContract);
         
         vm.expectEmit(true, true, false, false);
-        emit PlayerRegistered(player1, "TestPlayer", any);
+        emit PlayerRegistered(player1, "TestPlayer", 0);
         
         playerDataStorage.registerPlayer(player1, "TestPlayer");
         vm.stopPrank();
@@ -178,7 +178,7 @@ contract PlayerDataStorageTest is Test {
         playerDataStorage.registerPlayer(player1, "TestPlayer");
         
         vm.expectEmit(true, true, false, false);
-        emit AchievementUnlocked(player1, 1, any);
+        emit AchievementUnlocked(player1, 1, 0);
         
         playerDataStorage.unlockAchievement(player1, 1);
         vm.stopPrank();
@@ -213,11 +213,11 @@ contract PlayerDataStorageTest is Test {
     
     function testCalculateLevel() public {
         // Test various experience levels
-        assertEq(playerDataStorage._calculateLevel(0), 1);
-        assertEq(playerDataStorage._calculateLevel(99), 1);
-        assertEq(playerDataStorage._calculateLevel(100), 2);
-        assertEq(playerDataStorage._calculateLevel(400), 3); // sqrt(400/100) + 1 = 2 + 1 = 3
-        assertEq(playerDataStorage._calculateLevel(900), 4); // sqrt(900/100) + 1 = 3 + 1 = 4
+        assertEq(playerDataStorage.calculateLevel(0), 1);
+        assertEq(playerDataStorage.calculateLevel(99), 1);
+        assertEq(playerDataStorage.calculateLevel(100), 2);
+        assertEq(playerDataStorage.calculateLevel(400), 3); // sqrt(400/100) + 1 = 2 + 1 = 3
+        assertEq(playerDataStorage.calculateLevel(900), 4); // sqrt(900/100) + 1 = 3 + 1 = 4
     }
     
     function testPauseUnpause() public {

@@ -70,7 +70,7 @@ contract VestingTest is Test {
         vm.startPrank(vestingAdmin);
         
         vm.expectEmit(true, true, true, false);
-        emit VestingScheduleCreated(1, beneficiary1, 1000 * 10**18, any, 0, 365 days, "Team");
+        emit VestingScheduleCreated(1, beneficiary1, 1000 * 10**18, 0, 0, 365 days, "Team");
         
         uint256 scheduleId = vesting.createVestingSchedule(
             beneficiary1,
@@ -82,7 +82,7 @@ contract VestingTest is Test {
         
         assertEq(scheduleId, 1);
         
-        Vesting.VestingSchedule memory schedule = vesting.vestingSchedules(scheduleId);
+        Vesting.VestingSchedule memory schedule = vesting.getVestingSchedule(scheduleId);
         assertEq(schedule.beneficiary, beneficiary1);
         assertEq(schedule.totalAmount, 1000 * 10**18);
         assertEq(schedule.vestedAmount, 0);
@@ -111,9 +111,9 @@ contract VestingTest is Test {
             "Investor"
         );
         
-        assertEq(scheduleId, 2);
+        assertEq(scheduleId, 1); // nextScheduleId starts at 1
         
-        Vesting.VestingSchedule memory schedule = vesting.vestingSchedules(scheduleId);
+        Vesting.VestingSchedule memory schedule = vesting.getVestingSchedule(scheduleId);
         assertEq(schedule.cliffDuration, 90 days);
         assertEq(schedule.startTime, block.timestamp + 90 days);
         
@@ -140,8 +140,8 @@ contract VestingTest is Test {
         vm.stopPrank();
         
         // Check both schedules created
-        assertEq(vesting.nextScheduleId(), 5); // 2 new schedules
-        assertEq(vesting.totalAllocated(), 1800 * 10**18);
+        assertEq(vesting.nextScheduleId(), 3); // starts at 1, batch adds 2
+        assertEq(vesting.totalAllocated(), 800 * 10**18); // 500 + 300
         
         uint256[] memory schedules1 = vesting.getBeneficiarySchedules(beneficiary1);
         uint256[] memory schedules2 = vesting.getBeneficiarySchedules(beneficiary2);
@@ -179,10 +179,10 @@ contract VestingTest is Test {
         // Fast forward 180 days (half the vesting period)
         vm.warp(block.timestamp + 180 days);
         
-        // Should have ~50% vested
+        // Linear vesting over 365 days from creation: 180/365 ~= 49.3%
         uint256 vested = vesting.getVestedAmount(scheduleId);
-        assertGt(vested, 499 * 10**18); // Approximately 500 tokens
-        assertLt(vested, 501 * 10**18);
+        assertGt(vested, 493 * 10**18); // 180/365 of 1000 tokens
+        assertLt(vested, 494 * 10**18);
     }
     
     function testGetVestedAmountAfterVesting() public {
@@ -234,7 +234,7 @@ contract VestingTest is Test {
         assertEq(governanceToken.balanceOf(beneficiary1), balanceBefore + vestedBefore);
         
         // Check schedule updated
-        Vesting.VestingSchedule memory schedule = vesting.vestingSchedules(scheduleId);
+        Vesting.VestingSchedule memory schedule = vesting.getVestingSchedule(scheduleId);
         assertEq(schedule.vestedAmount, vestedBefore);
         
         // Check total vested updated
@@ -330,8 +330,8 @@ contract VestingTest is Test {
         // After 180 days, ~50% progress
         vm.warp(block.timestamp + 180 days);
         uint256 progress = vesting.getVestingProgress(scheduleId);
-        assertGt(progress, 4999); // ~5000 (50%)
-        assertLt(progress, 5001);
+        assertGt(progress, 4930); // 180/365 ~= 49.3% -> ~4931 bps
+        assertLt(progress, 4932);
         
         // After full vesting, 100% progress
         vm.warp(block.timestamp + 366 days);
@@ -392,16 +392,19 @@ contract VestingTest is Test {
         
         vm.stopPrank();
         
-        // Try to create schedule while paused
+        // Try to claim while paused (claims are gated by whenNotPaused)
         vm.startPrank(vestingAdmin);
-        vm.expectRevert("Pausable: paused");
-        vesting.createVestingSchedule(
+        uint256 scheduleId = vesting.createVestingSchedule(
             beneficiary1,
             1000 * 10**18,
             0,
             365 days,
             "Team"
         );
+        vm.stopPrank();
+        vm.startPrank(beneficiary1);
+        vm.expectRevert("Pausable: paused");
+        vesting.claim(scheduleId);
         vm.stopPrank();
         
         // Unpause
@@ -465,7 +468,8 @@ contract VestingTest is Test {
         );
         vm.stopPrank();
         
-        assertEq(vesting.vestingSchedules(scheduleId).totalAmount, amount);
-        assertEq(vesting.vestingSchedules(scheduleId).vestingDuration, duration);
+        Vesting.VestingSchedule memory _schedule = vesting.getVestingSchedule(scheduleId);
+        assertEq(_schedule.totalAmount, amount);
+        assertEq(_schedule.vestingDuration, duration);
     }
 }

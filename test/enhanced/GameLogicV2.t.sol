@@ -28,6 +28,7 @@ contract GameLogicV2Test is Test {
     event BattleResolved(bytes32 indexed battleId, address indexed winner, address indexed loser);
     event ItemCrafted(address indexed player, uint256 indexed tokenId, uint256 recipeId, uint256 cost);
     event CraftingFailed(address indexed player, uint256 recipeId, uint256 costLost);
+    event QuestProgressUpdated(address indexed player, uint256 indexed questId, uint256 progress);
     event ItemUpgraded(address indexed player, uint256 indexed tokenId, uint256 fromRarity, uint256 toRarity);
     event ItemRepaired(address indexed player, uint256 indexed tokenId, uint256 cost);
     event ExperienceGained(address indexed player, uint256 amount, uint256 newLevel);
@@ -114,7 +115,7 @@ contract GameLogicV2Test is Test {
         assertEq(gameLogic.owner(), owner);
         
         // Check default game config
-        GameLogicV2.GameConfig memory config = gameLogic.gameConfig();
+        GameLogicV2.GameConfig memory config = gameLogic.getGameConfig();
         assertEq(config.baseQuestReward, 100 * 10**18);
         assertEq(config.basePvpWinReward, 50 * 10**18);
         assertEq(config.baseCraftingCost, 10 * 10**18);
@@ -163,8 +164,8 @@ contract GameLogicV2Test is Test {
         // Start battle
         vm.startPrank(player1);
         
-        vm.expectEmit(true, true, true, false);
-        emit BattleStarted(any, player1, player2);
+        vm.expectEmit(false, true, true, false);
+        emit BattleStarted(bytes32(0), player1, player2);
         
         bytes32 battleId = gameLogic.startBattle(
             player2,
@@ -174,9 +175,9 @@ contract GameLogicV2Test is Test {
             500  // player2 health
         );
         
-        assertNe(battleId, bytes32(0));
+        assertFalse(battleId == bytes32(0));
         
-        GameLogicV2.Battle memory battle = gameLogic.battles(battleId);
+        GameLogicV2.Battle memory battle = gameLogic.getBattle(battleId);
         assertEq(battle.player1, player1);
         assertEq(battle.player2, player2);
         assertTrue(battle.isActive);
@@ -213,7 +214,7 @@ contract GameLogicV2Test is Test {
         
         vm.expectEmit(true, true, true, true);
         emit BattleResolved(battleId, player1, player2);
-        emit PvPResult(player1, player2, any, any);
+        emit PvPResult(player1, player2, 0, 0);
         
         gameLogic.resolveBattle(
             battleId,
@@ -234,7 +235,8 @@ contract GameLogicV2Test is Test {
         assertLt(loser.pvpRating, 1000); // Rating decreased
         
         // Check battle inactive
-        assertFalse(gameLogic.battles(battleId).isActive);
+        GameLogicV2.Battle memory _battle = gameLogic.getBattle(battleId);
+        assertFalse(_battle.isActive);
         
         vm.stopPrank();
     }
@@ -253,7 +255,7 @@ contract GameLogicV2Test is Test {
         vm.startPrank(oracle);
         
         vm.expectEmit(true, true, false, false);
-        emit PvPResult(player1, player2, any, 0);
+        emit PvPResult(player1, player2, 0, 0);
         
         gameLogic.recordPvPResult(player1, player2);
         
@@ -287,7 +289,7 @@ contract GameLogicV2Test is Test {
         
         assertEq(recipeId, 1);
         
-        GameLogicV2.CraftingRecipe memory recipe = gameLogic.craftingRecipes(recipeId);
+        GameLogicV2.CraftingRecipe memory recipe = gameLogic.getCraftingRecipe(recipeId);
         assertEq(recipe.name, "Sword of Power");
         assertEq(uint256(recipe.assetType), uint256(GameAssetNFT.AssetType.WEAPON));
         assertEq(recipe.requiredLevel, 5);
@@ -313,20 +315,20 @@ contract GameLogicV2Test is Test {
             "Basic crafting material"
         );
         
-        // Create recipe
+        // Create recipe with the resource already wired in
+        uint256[] memory resourceIds = new uint256[](1);
+        resourceIds[0] = resourceId;
+        uint256[] memory resourceAmounts = new uint256[](1);
+        resourceAmounts[0] = 5;
         uint256 recipeId = gameLogic.createCraftingRecipe(
             "Iron Sword",
             GameAssetNFT.AssetType.WEAPON,
             1, // required level
             10 * 10**18, // base cost
-            new uint256[](1),
-            new uint256[](1),
+            resourceIds,
+            resourceAmounts,
             10000 // 100% success rate
         );
-        
-        // Update recipe with actual resource
-        gameLogic.craftingRecipes(recipeId).resourceIds[0] = resourceId;
-        gameLogic.craftingRecipes(recipeId).resourceAmounts[0] = 5;
         
         // Give player tokens and resources
         utilityToken.mint(player1, 100 * 10**18);
@@ -340,7 +342,7 @@ contract GameLogicV2Test is Test {
         gameResourceNFT.setApprovalForAll(address(gameLogic), true);
         
         vm.expectEmit(true, true, false, false);
-        emit ItemCrafted(player1, 1, recipeId, any);
+        emit ItemCrafted(player1, 1, recipeId, 0);
         
         gameLogic.craftItem(recipeId, "https://example.com/sword.json");
         
@@ -370,19 +372,20 @@ contract GameLogicV2Test is Test {
             "Basic crafting material"
         );
         
-        // Create recipe with 0% success rate for testing
+        // Create recipe with minimal success rate for testing
+        uint256[] memory resourceIds = new uint256[](1);
+        resourceIds[0] = resourceId;
+        uint256[] memory resourceAmounts = new uint256[](1);
+        resourceAmounts[0] = 5;
         uint256 recipeId = gameLogic.createCraftingRecipe(
             "Risky Sword",
             GameAssetNFT.AssetType.WEAPON,
             1,
             10 * 10**18,
-            new uint256[](1),
-            new uint256[](1),
-            0 // 0% success rate
+            resourceIds,
+            resourceAmounts,
+            1 // 0.01% success rate (minimum allowed)
         );
-        
-        gameLogic.craftingRecipes(recipeId).resourceIds[0] = resourceId;
-        gameLogic.craftingRecipes(recipeId).resourceAmounts[0] = 5;
         
         // Give player tokens and resources
         utilityToken.mint(player1, 100 * 10**18);
@@ -394,9 +397,16 @@ contract GameLogicV2Test is Test {
         vm.startPrank(player1);
         utilityToken.approve(address(gameLogic), 100 * 10**18);
         gameResourceNFT.setApprovalForAll(address(gameLogic), true);
+
+        // Warp to a timestamp where the deterministic roll fails (roll != 0)
+        uint256 ts = block.timestamp;
+        while (uint256(keccak256(abi.encodePacked(ts, player1, recipeId))) % 10000 == 0) {
+            ts++;
+        }
+        vm.warp(ts);
         
         vm.expectEmit(true, true, false, false);
-        emit CraftingFailed(player1, recipeId, any);
+        emit CraftingFailed(player1, recipeId, 0);
         
         gameLogic.craftItem(recipeId, "https://example.com/sword.json");
         
@@ -404,7 +414,7 @@ contract GameLogicV2Test is Test {
         assertEq(gameAssetNFT.balanceOf(player1), 0);
         
         // Check some resources lost (50% on failure)
-        assertEq(gameResourceNFT.balanceOf(player1, resourceId), 7); // Lost 3 (50% of 5 is 2.5, rounded down)
+        assertEq(gameResourceNFT.balanceOf(player1, resourceId), 8); // failure burns amounts/2 = 5/2 = 2
         
         vm.stopPrank();
     }
@@ -442,7 +452,7 @@ contract GameLogicV2Test is Test {
         uint256 initialBalance = utilityToken.balanceOf(player1);
         
         vm.expectEmit(true, true, false, false);
-        emit ItemCrafted(player1, 1, 10 * 10**18);
+        emit ItemCrafted(player1, 1, 0, 10 * 10**18);
         
         gameLogic.craftItem(
             GameAssetNFT.AssetType.WEAPON,
@@ -478,7 +488,7 @@ contract GameLogicV2Test is Test {
         
         assertEq(recipeId, 1);
         
-        GameLogicV2.UpgradeRecipe memory recipe = gameLogic.upgradeRecipes(recipeId);
+        GameLogicV2.UpgradeRecipe memory recipe = gameLogic.getUpgradeRecipe(recipeId);
         assertEq(uint256(recipe.targetAssetType), uint256(GameAssetNFT.AssetType.WEAPON));
         assertEq(recipe.fromRarity, 1);
         assertEq(recipe.toRarity, 2);
@@ -543,7 +553,7 @@ contract GameLogicV2Test is Test {
         uint256 initialBalance = utilityToken.balanceOf(player1);
         
         vm.expectEmit(true, true, false, true);
-        emit ItemRepaired(player1, tokenId, any);
+        emit ItemRepaired(player1, tokenId, 5 * 10**18); // baseRepairCost (tokenomics price is unset -> fallback)
         
         gameLogic.repairItem(tokenId);
         
@@ -573,7 +583,7 @@ contract GameLogicV2Test is Test {
         
         assertEq(questId, 1);
         
-        GameLogicV2.Quest memory quest = gameLogic.quests(questId);
+        GameLogicV2.Quest memory quest = gameLogic.getQuest(questId);
         assertEq(quest.name, "Slay Dragons");
         assertEq(quest.baseRewardAmount, 500 * 10**18);
         assertEq(quest.requiredLevel, 10);
@@ -634,7 +644,7 @@ contract GameLogicV2Test is Test {
         vm.startPrank(player1);
         
         vm.expectEmit(true, true, false, false);
-        emit QuestCompleted(player1, questId, any);
+        emit QuestCompleted(player1, questId, 0);
         
         gameLogic.completeQuest(questId);
         
@@ -682,7 +692,8 @@ contract GameLogicV2Test is Test {
         // Should be able to complete daily quest again
         vm.startPrank(player1);
         gameLogic.completeQuest(questId);
-        assertGt(utilityToken.balanceOf(player1), 50 * 10**18); // 2x rewards
+        // Tokenomics daily budget is 0, so each completion pays baseReward/2 = 25e18
+        assertEq(utilityToken.balanceOf(player1), 50 * 10**18); // 25e18 + 25e18
         vm.stopPrank();
     }
     
@@ -728,7 +739,7 @@ contract GameLogicV2Test is Test {
         
         // Update config to set low max level
         vm.startPrank(owner);
-        GameLogicV2.GameConfig memory newConfig = gameLogic.gameConfig();
+        GameLogicV2.GameConfig memory newConfig = gameLogic.getGameConfig();
         newConfig.maxPlayerLevel = 5;
         gameLogic.updateGameConfig(newConfig);
         vm.stopPrank();
@@ -811,7 +822,8 @@ contract GameLogicV2Test is Test {
         vm.startPrank(player1);
         gameLogic.completeQuest(questId);
         
-        assertGt(utilityToken.balanceOf(player1), 0);
+        // Tokenomics daily budget is 0 -> calculateQuestReward returns baseReward/2
+        assertEq(utilityToken.balanceOf(player1), rewardAmount / 2);
         vm.stopPrank();
     }
 }

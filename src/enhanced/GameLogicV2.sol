@@ -126,6 +126,26 @@ contract GameLogicV2 is
 
     // PvP battles
     mapping(bytes32 => Battle) public battles;
+
+    function getGameConfig() external view returns (GameConfig memory) {
+        return gameConfig;
+    }
+
+    function getBattle(bytes32 battleId) external view returns (Battle memory) {
+        return battles[battleId];
+    }
+
+    function getCraftingRecipe(uint256 recipeId) external view returns (CraftingRecipe memory) {
+        return craftingRecipes[recipeId];
+    }
+
+    function getUpgradeRecipe(uint256 recipeId) external view returns (UpgradeRecipe memory) {
+        return upgradeRecipes[recipeId];
+    }
+
+    function getQuest(uint256 questId) external view returns (Quest memory) {
+        return quests[questId];
+    }
     mapping(address => uint256) public playerRating;
 
     // Events
@@ -238,7 +258,7 @@ contract GameLogicV2 is
         uint256 player2Damage,
         uint256 player1Health,
         uint256 player2Health
-    ) external whenNotPaused nonReentrant {
+    ) external whenNotPaused nonReentrant returns (bytes32) {
         require(players[msg.sender].isActive, "Player not registered");
         require(players[opponent].isActive, "Opponent not registered");
         require(msg.sender != opponent, "Cannot battle self");
@@ -259,6 +279,8 @@ contract GameLogicV2 is
         });
 
         emit BattleStarted(battleId, msg.sender, opponent);
+
+        return battleId;
     }
 
     /**
@@ -293,6 +315,7 @@ contract GameLogicV2 is
         // Update ratings based on damage and health
         uint256 ratingChange = calculateRatingChange(
             battle,
+            winner,
             player1FinalDamage,
             player2FinalDamage,
             player1FinalHealth,
@@ -333,6 +356,7 @@ contract GameLogicV2 is
      */
     function calculateRatingChange(
         Battle memory battle,
+        address winner,
         uint256 player1FinalDamage,
         uint256 player2FinalDamage,
         uint256 player1FinalHealth,
@@ -522,7 +546,7 @@ contract GameLogicV2 is
         // Grant experience
         _grantExperience(msg.sender, rarity * 5);
 
-        emit ItemCrafted(msg.sender, tokenId, gameConfig.baseCraftingCost);
+        emit ItemCrafted(msg.sender, tokenId, 0, gameConfig.baseCraftingCost);
     }
 
     // ========== ASSET PROGRESSION SYSTEM ==========

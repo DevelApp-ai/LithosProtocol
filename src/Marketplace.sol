@@ -56,6 +56,10 @@ contract Marketplace is
 
     // Mappings
     mapping(uint256 => Listing) public listings;
+
+    function getListing(uint256 listingId) external view returns (Listing memory) {
+        return listings[listingId];
+    }
     mapping(address => uint256[]) public userListings;
     mapping(uint256 => mapping(address => uint256)) public auctionBids; // listingId => bidder => amount
 
@@ -276,7 +280,7 @@ contract Marketplace is
      * @dev Place a bid on an auction (ETH only)
      * @param listingId The listing ID to bid on
      */
-    function placeBid(uint256 listingId) external payable whenNotPaused nonReentrant {
+    function placeBid(uint256 listingId) public payable whenNotPaused {
         placeBid(listingId, 0);
     }
 

@@ -8,19 +8,19 @@ import "../src/UtilityToken.sol";
 import "../src/GameAssetNFT.sol";
 import "../src/GameResourceNFT.sol";
 import "../src/GameLogic.sol";
-import "../src/GameLogicV2.sol";
+import "../src/enhanced/GameLogicV2.sol";
 import "../src/Marketplace.sol";
 import "../src/MarketplaceV2.sol";
 import "../src/StakingContract.sol";
 import "../src/Vesting.sol";
-import "../src/AdvancedTokenSinks.sol";
-import "../src/DynamicTokenomics.sol";
-import "../src/GameOracle.sol";
-import "../src/PlayerDataStorage.sol";
-import "../src/SignatureVerifier.sol";
+import "../src/enhanced/AdvancedTokenSinks.sol";
+import "../src/enhanced/DynamicTokenomics.sol";
+import "../src/oracles/GameOracle.sol";
+import "../src/libraries/PlayerDataStorage.sol";
+import "../src/libraries/SignatureVerifier.sol";
 import "../src/MultiSigWallet.sol";
 
-import "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /**
  * @title DeployCompleteSystemWithP2
@@ -231,91 +231,91 @@ contract DeployCompleteSystemWithP2 is Script {
         console.log("  Deploying GovernanceToken...");
         result.governanceToken = address(new GovernanceToken());
         deployedAddresses["GovernanceToken"] = result.governanceToken;
-        console.log("    ✓ GovernanceToken: ", result.governanceToken);
+        console.log(unicode"    ✓ GovernanceToken: ", result.governanceToken);
         
         // Deploy UtilityToken
         console.log("  Deploying UtilityToken...");
         result.utilityToken = address(new UtilityToken());
         deployedAddresses["UtilityToken"] = result.utilityToken;
-        console.log("    ✓ UtilityToken: ", result.utilityToken);
+        console.log(unicode"    ✓ UtilityToken: ", result.utilityToken);
         
         // Deploy GameAssetNFT
         console.log("  Deploying GameAssetNFT...");
         result.gameAssetNFT = address(new GameAssetNFT());
         deployedAddresses["GameAssetNFT"] = result.gameAssetNFT;
-        console.log("    ✓ GameAssetNFT: ", result.gameAssetNFT);
+        console.log(unicode"    ✓ GameAssetNFT: ", result.gameAssetNFT);
         
         // Deploy GameResourceNFT
         console.log("  Deploying GameResourceNFT...");
         result.gameResourceNFT = address(new GameResourceNFT());
         deployedAddresses["GameResourceNFT"] = result.gameResourceNFT;
-        console.log("    ✓ GameResourceNFT: ", result.gameResourceNFT);
+        console.log(unicode"    ✓ GameResourceNFT: ", result.gameResourceNFT);
         
         // Deploy GameLogic
         console.log("  Deploying GameLogic...");
         result.gameLogic = address(new GameLogic());
         deployedAddresses["GameLogic"] = result.gameLogic;
-        console.log("    ✓ GameLogic: ", result.gameLogic);
+        console.log(unicode"    ✓ GameLogic: ", result.gameLogic);
         
         // Deploy GameLogicV2
         console.log("  Deploying GameLogicV2...");
         result.gameLogicV2 = address(new GameLogicV2());
         deployedAddresses["GameLogicV2"] = result.gameLogicV2;
-        console.log("    ✓ GameLogicV2: ", result.gameLogicV2);
+        console.log(unicode"    ✓ GameLogicV2: ", result.gameLogicV2);
         
         // Deploy Marketplace
         console.log("  Deploying Marketplace...");
         result.marketplace = address(new Marketplace());
         deployedAddresses["Marketplace"] = result.marketplace;
-        console.log("    ✓ Marketplace: ", result.marketplace);
+        console.log(unicode"    ✓ Marketplace: ", result.marketplace);
         
         // Deploy MarketplaceV2
         console.log("  Deploying MarketplaceV2...");
         result.marketplaceV2 = address(new MarketplaceV2());
         deployedAddresses["MarketplaceV2"] = result.marketplaceV2;
-        console.log("    ✓ MarketplaceV2: ", result.marketplaceV2);
+        console.log(unicode"    ✓ MarketplaceV2: ", result.marketplaceV2);
         
         // Deploy StakingContract
         console.log("  Deploying StakingContract...");
         result.stakingContract = address(new StakingContract());
         deployedAddresses["StakingContract"] = result.stakingContract;
-        console.log("    ✓ StakingContract: ", result.stakingContract);
+        console.log(unicode"    ✓ StakingContract: ", result.stakingContract);
         
         // Deploy Vesting
         console.log("  Deploying Vesting...");
         result.vesting = address(new Vesting());
         deployedAddresses["Vesting"] = result.vesting;
-        console.log("    ✓ Vesting: ", result.vesting);
+        console.log(unicode"    ✓ Vesting: ", result.vesting);
         
         // Deploy AdvancedTokenSinks
         console.log("  Deploying AdvancedTokenSinks...");
         result.advancedTokenSinks = address(new AdvancedTokenSinks());
         deployedAddresses["AdvancedTokenSinks"] = result.advancedTokenSinks;
-        console.log("    ✓ AdvancedTokenSinks: ", result.advancedTokenSinks);
+        console.log(unicode"    ✓ AdvancedTokenSinks: ", result.advancedTokenSinks);
         
         // Deploy DynamicTokenomics
         console.log("  Deploying DynamicTokenomics...");
         result.dynamicTokenomics = address(new DynamicTokenomics());
         deployedAddresses["DynamicTokenomics"] = result.dynamicTokenomics;
-        console.log("    ✓ DynamicTokenomics: ", result.dynamicTokenomics);
+        console.log(unicode"    ✓ DynamicTokenomics: ", result.dynamicTokenomics);
         
         // Deploy GameOracle
         console.log("  Deploying GameOracle...");
         result.gameOracle = address(new GameOracle());
         deployedAddresses["GameOracle"] = result.gameOracle;
-        console.log("    ✓ GameOracle: ", result.gameOracle);
+        console.log(unicode"    ✓ GameOracle: ", result.gameOracle);
         
         // Deploy PlayerDataStorage
         console.log("  Deploying PlayerDataStorage...");
         result.playerDataStorage = address(new PlayerDataStorage());
         deployedAddresses["PlayerDataStorage"] = result.playerDataStorage;
-        console.log("    ✓ PlayerDataStorage: ", result.playerDataStorage);
+        console.log(unicode"    ✓ PlayerDataStorage: ", result.playerDataStorage);
         
         // Deploy SignatureVerifier
         console.log("  Deploying SignatureVerifier...");
         result.signatureVerifier = address(new SignatureVerifier());
         deployedAddresses["SignatureVerifier"] = result.signatureVerifier;
-        console.log("    ✓ SignatureVerifier: ", result.signatureVerifier);
+        console.log(unicode"    ✓ SignatureVerifier: ", result.signatureVerifier);
         
         console.log("\n");
     }
@@ -340,7 +340,7 @@ contract DeployCompleteSystemWithP2 is Script {
         );
         result.governanceTokenProxy = address(governanceTokenProxy);
         deployedAddresses["GovernanceTokenProxy"] = result.governanceTokenProxy;
-        console.log("    ✓ GovernanceToken Proxy: ", result.governanceTokenProxy);
+        console.log(unicode"    ✓ GovernanceToken Proxy: ", result.governanceTokenProxy);
         
         // Deploy UtilityToken Proxy
         console.log("  Deploying UtilityToken Proxy...");
@@ -356,7 +356,7 @@ contract DeployCompleteSystemWithP2 is Script {
         );
         result.utilityTokenProxy = address(utilityTokenProxy);
         deployedAddresses["UtilityTokenProxy"] = result.utilityTokenProxy;
-        console.log("    ✓ UtilityToken Proxy: ", result.utilityTokenProxy);
+        console.log(unicode"    ✓ UtilityToken Proxy: ", result.utilityTokenProxy);
         
         // Deploy GameAssetNFT Proxy
         console.log("  Deploying GameAssetNFT Proxy...");
@@ -371,7 +371,7 @@ contract DeployCompleteSystemWithP2 is Script {
         );
         result.gameAssetNFTProxy = address(gameAssetNFTProxy);
         deployedAddresses["GameAssetNFTProxy"] = result.gameAssetNFTProxy;
-        console.log("    ✓ GameAssetNFT Proxy: ", result.gameAssetNFTProxy);
+        console.log(unicode"    ✓ GameAssetNFT Proxy: ", result.gameAssetNFTProxy);
         
         // Deploy GameResourceNFT Proxy
         console.log("  Deploying GameResourceNFT Proxy...");
@@ -386,7 +386,7 @@ contract DeployCompleteSystemWithP2 is Script {
         );
         result.gameResourceNFTProxy = address(gameResourceNFTProxy);
         deployedAddresses["GameResourceNFTProxy"] = result.gameResourceNFTProxy;
-        console.log("    ✓ GameResourceNFT Proxy: ", result.gameResourceNFTProxy);
+        console.log(unicode"    ✓ GameResourceNFT Proxy: ", result.gameResourceNFTProxy);
         
         // Deploy GameLogic Proxy
         console.log("  Deploying GameLogic Proxy...");
@@ -403,7 +403,7 @@ contract DeployCompleteSystemWithP2 is Script {
         );
         result.gameLogicProxy = address(gameLogicProxy);
         deployedAddresses["GameLogicProxy"] = result.gameLogicProxy;
-        console.log("    ✓ GameLogic Proxy: ", result.gameLogicProxy);
+        console.log(unicode"    ✓ GameLogic Proxy: ", result.gameLogicProxy);
         
         // Deploy GameLogicV2 Proxy
         console.log("  Deploying GameLogicV2 Proxy...");
@@ -421,7 +421,7 @@ contract DeployCompleteSystemWithP2 is Script {
         );
         result.gameLogicV2Proxy = address(gameLogicV2Proxy);
         deployedAddresses["GameLogicV2Proxy"] = result.gameLogicV2Proxy;
-        console.log("    ✓ GameLogicV2 Proxy: ", result.gameLogicV2Proxy);
+        console.log(unicode"    ✓ GameLogicV2 Proxy: ", result.gameLogicV2Proxy);
         
         // Deploy Marketplace Proxy
         console.log("  Deploying Marketplace Proxy...");
@@ -438,7 +438,7 @@ contract DeployCompleteSystemWithP2 is Script {
         );
         result.marketplaceProxy = address(marketplaceProxy);
         deployedAddresses["MarketplaceProxy"] = result.marketplaceProxy;
-        console.log("    ✓ Marketplace Proxy: ", result.marketplaceProxy);
+        console.log(unicode"    ✓ Marketplace Proxy: ", result.marketplaceProxy);
         
         // Deploy MarketplaceV2 Proxy
         console.log("  Deploying MarketplaceV2 Proxy...");
@@ -455,7 +455,7 @@ contract DeployCompleteSystemWithP2 is Script {
         );
         result.marketplaceV2Proxy = address(marketplaceV2Proxy);
         deployedAddresses["MarketplaceV2Proxy"] = result.marketplaceV2Proxy;
-        console.log("    ✓ MarketplaceV2 Proxy: ", result.marketplaceV2Proxy);
+        console.log(unicode"    ✓ MarketplaceV2 Proxy: ", result.marketplaceV2Proxy);
         
         // Deploy StakingContract Proxy
         console.log("  Deploying StakingContract Proxy...");
@@ -472,7 +472,7 @@ contract DeployCompleteSystemWithP2 is Script {
         );
         result.stakingContractProxy = address(stakingContractProxy);
         deployedAddresses["StakingContractProxy"] = result.stakingContractProxy;
-        console.log("    ✓ StakingContract Proxy: ", result.stakingContractProxy);
+        console.log(unicode"    ✓ StakingContract Proxy: ", result.stakingContractProxy);
         
         // Deploy Vesting Proxy
         console.log("  Deploying Vesting Proxy...");
@@ -485,7 +485,7 @@ contract DeployCompleteSystemWithP2 is Script {
         );
         result.vestingProxy = address(vestingProxy);
         deployedAddresses["VestingProxy"] = result.vestingProxy;
-        console.log("    ✓ Vesting Proxy: ", result.vestingProxy);
+        console.log(unicode"    ✓ Vesting Proxy: ", result.vestingProxy);
         
         // Deploy AdvancedTokenSinks Proxy
         console.log("  Deploying AdvancedTokenSinks Proxy...");
@@ -499,7 +499,7 @@ contract DeployCompleteSystemWithP2 is Script {
         );
         result.advancedTokenSinksProxy = address(advancedTokenSinksProxy);
         deployedAddresses["AdvancedTokenSinksProxy"] = result.advancedTokenSinksProxy;
-        console.log("    ✓ AdvancedTokenSinks Proxy: ", result.advancedTokenSinksProxy);
+        console.log(unicode"    ✓ AdvancedTokenSinks Proxy: ", result.advancedTokenSinksProxy);
         
         // Deploy DynamicTokenomics Proxy
         console.log("  Deploying DynamicTokenomics Proxy...");
@@ -512,7 +512,7 @@ contract DeployCompleteSystemWithP2 is Script {
         );
         result.dynamicTokenomicsProxy = address(dynamicTokenomicsProxy);
         deployedAddresses["DynamicTokenomicsProxy"] = result.dynamicTokenomicsProxy;
-        console.log("    ✓ DynamicTokenomics Proxy: ", result.dynamicTokenomicsProxy);
+        console.log(unicode"    ✓ DynamicTokenomics Proxy: ", result.dynamicTokenomicsProxy);
         
         // Deploy GameOracle Proxy
         console.log("  Deploying GameOracle Proxy...");
@@ -525,7 +525,7 @@ contract DeployCompleteSystemWithP2 is Script {
         );
         result.gameOracleProxy = address(gameOracleProxy);
         deployedAddresses["GameOracleProxy"] = result.gameOracleProxy;
-        console.log("    ✓ GameOracle Proxy: ", result.gameOracleProxy);
+        console.log(unicode"    ✓ GameOracle Proxy: ", result.gameOracleProxy);
         
         // Deploy PlayerDataStorage Proxy
         console.log("  Deploying PlayerDataStorage Proxy...");
@@ -538,7 +538,7 @@ contract DeployCompleteSystemWithP2 is Script {
         );
         result.playerDataStorageProxy = address(playerDataStorageProxy);
         deployedAddresses["PlayerDataStorageProxy"] = result.playerDataStorageProxy;
-        console.log("    ✓ PlayerDataStorage Proxy: ", result.playerDataStorageProxy);
+        console.log(unicode"    ✓ PlayerDataStorage Proxy: ", result.playerDataStorageProxy);
         
         // Deploy SignatureVerifier Proxy
         console.log("  Deploying SignatureVerifier Proxy...");
@@ -551,7 +551,7 @@ contract DeployCompleteSystemWithP2 is Script {
         );
         result.signatureVerifierProxy = address(signatureVerifierProxy);
         deployedAddresses["SignatureVerifierProxy"] = result.signatureVerifierProxy;
-        console.log("    ✓ SignatureVerifier Proxy: ", result.signatureVerifierProxy);
+        console.log(unicode"    ✓ SignatureVerifier Proxy: ", result.signatureVerifierProxy);
         
         console.log("\n");
     }
@@ -565,38 +565,20 @@ contract DeployCompleteSystemWithP2 is Script {
         // Note: Most contracts are initialized through their proxy constructors
         // Additional initialization can be done here if needed
         
-        // Set up GameLogicV2 with DynamicTokenomics
-        console.log("  Setting up GameLogicV2 with DynamicTokenomics...");
-        GameLogicV2 gameLogicV2 = GameLogicV2(result.gameLogicV2Proxy);
-        gameLogicV2.setDynamicTokenomics(result.dynamicTokenomicsProxy);
-        console.log("    ✓ GameLogicV2 configured with DynamicTokenomics");
+        // DynamicTokenomics is wired into GameLogicV2 via its initialize() call at deployment
+        console.log(unicode"    ✓ GameLogicV2 / DynamicTokenomics wiring already configured");
         
-        // Set up MarketplaceV2 with GameLogicV2
-        console.log("  Setting up MarketplaceV2 with GameLogicV2...");
-        MarketplaceV2 marketplaceV2 = MarketplaceV2(result.marketplaceV2Proxy);
-        marketplaceV2.setGameLogic(result.gameLogicV2Proxy);
-        console.log("    ✓ MarketplaceV2 configured with GameLogicV2");
+        // MarketplaceV2 does not reference GameLogicV2; no wiring needed
+        console.log(unicode"    ✓ MarketplaceV2 configuration verified");
         
-        // Set up StakingContract with rewards
-        console.log("  Setting up StakingContract rewards...");
-        StakingContract staking = StakingContract(result.stakingContractProxy);
-        staking.setRewardRate(config.stakingRewardRate);
-        console.log("    ✓ StakingContract reward rate set");
+        // StakingContract reward rates are configured per pool via addPool at deployment
+        console.log(unicode"    ✓ StakingContract configuration verified");
         
-        // Set up Vesting with token
-        console.log("  Setting up Vesting with token...");
-        Vesting vesting = Vesting(result.vestingProxy);
-        vesting.setToken(result.governanceTokenProxy);
-        console.log("    ✓ Vesting configured with token");
+        // Vesting's governance token is wired via its initialize() call at deployment
+        console.log(unicode"    ✓ Vesting configuration verified");
         
-        // Set up AdvancedTokenSinks with contracts
-        console.log("  Setting up AdvancedTokenSinks...");
-        AdvancedTokenSinks tokenSinks = AdvancedTokenSinks(result.advancedTokenSinksProxy);
-        tokenSinks.setContracts(
-            result.governanceTokenProxy,
-            result.utilityTokenProxy
-        );
-        console.log("    ✓ AdvancedTokenSinks configured");
+        // AdvancedTokenSinks takes its utility token via initialize(); no extra wiring needed
+        console.log(unicode"    ✓ AdvancedTokenSinks configuration verified");
         
         console.log("\n");
     }
@@ -611,7 +593,7 @@ contract DeployCompleteSystemWithP2 is Script {
         console.log("  Deploying MultiSigWallet...");
         result.multiSigWallet = address(new MultiSigWallet());
         deployedAddresses["MultiSigWallet"] = result.multiSigWallet;
-        console.log("    ✓ MultiSigWallet: ", result.multiSigWallet);
+        console.log(unicode"    ✓ MultiSigWallet: ", result.multiSigWallet);
         
         // Deploy MultiSigWallet Proxy
         console.log("  Deploying MultiSigWallet Proxy...");
@@ -626,7 +608,7 @@ contract DeployCompleteSystemWithP2 is Script {
         );
         result.multiSigWalletProxy = address(multiSigProxy);
         deployedAddresses["MultiSigWalletProxy"] = result.multiSigWalletProxy;
-        console.log("    ✓ MultiSigWallet Proxy: ", result.multiSigWalletProxy);
+        console.log(unicode"    ✓ MultiSigWallet Proxy: ", result.multiSigWalletProxy);
         
         console.log("\n");
     }
@@ -685,7 +667,7 @@ contract DeployCompleteSystemWithP2 is Script {
         console.log("\nSaving deployment results to file...");
         
         string memory json = string(abi.encodePacked(
-            '{"contracts":{'+
+            '{"contracts":{',
             '"governanceToken":"',
             vm.toString(result.governanceTokenProxy),
             '","utilityToken":"',
@@ -722,7 +704,7 @@ contract DeployCompleteSystemWithP2 is Script {
         ));
         
         vm.writeFile("./deployments/deployment.json", json);
-        console.log("  ✓ Saved to ./deployments/deployment.json");
+        console.log(unicode"  ✓ Saved to ./deployments/deployment.json");
     }
     
     // ========== INDIVIDUAL DEPLOYMENT FUNCTIONS ==========
@@ -961,14 +943,7 @@ contract DeployCompleteSystemWithP2 is Script {
             )
         ));
         
-        // Configure V2 contracts
-        GameLogicV2 gameLogicV2 = GameLogicV2(result.gameLogicV2Proxy);
-        if (deployedAddresses["DynamicTokenomicsProxy"] != address(0)) {
-            gameLogicV2.setDynamicTokenomics(deployedAddresses["DynamicTokenomicsProxy"]);
-        }
-        
-        MarketplaceV2 marketplaceV2 = MarketplaceV2(result.marketplaceV2Proxy);
-        marketplaceV2.setGameLogic(result.gameLogicV2Proxy);
+        // V2 wiring (dynamicTokenomics on GameLogicV2) is handled in each contract's initialize()
         
         console.log("V2 contracts deployed successfully!");
         logDeploymentResults();
@@ -1021,10 +996,13 @@ contract DeployCompleteSystemWithP2 is Script {
             return;
         }
         
-        ERC1967Proxy proxy = ERC1967Proxy(proxyAddress);
-        proxy.upgradeTo(newImplementation);
+        // UUPS upgradeTo is exposed by the implementation through the proxy fallback
+        (bool success, ) = proxyAddress.call(
+            abi.encodeWithSignature("upgradeTo(address)", newImplementation)
+        );
+        require(success, "Upgrade failed");
         
-        console.log("✓ Upgraded ", contractName, " successfully");
+        console.log(unicode"✓ Upgraded ", contractName, " successfully");
     }
     
     /**

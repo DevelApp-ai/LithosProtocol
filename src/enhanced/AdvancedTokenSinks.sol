@@ -65,6 +65,22 @@ contract AdvancedTokenSinks is
     mapping(uint256 => TournamentEntry) public tournaments;
     mapping(uint256 => AssetRental) public assetRentals;
     mapping(uint256 => ConvenienceFeature) public convenienceFeatures;
+
+    function getCosmeticItem(uint256 itemId) external view returns (CosmeticItem memory) {
+        return cosmeticItems[itemId];
+    }
+
+    function getTournament(uint256 tournamentId) external view returns (TournamentEntry memory) {
+        return tournaments[tournamentId];
+    }
+
+    function getAssetRental(uint256 rentalId) external view returns (AssetRental memory) {
+        return assetRentals[rentalId];
+    }
+
+    function getConvenienceFeature(uint256 featureId) external view returns (ConvenienceFeature memory) {
+        return convenienceFeatures[featureId];
+    }
     
     // Player purchases and subscriptions
     mapping(address => mapping(uint256 => bool)) public playerCosmetics;
@@ -122,6 +138,14 @@ contract AdvancedTokenSinks is
         onlyRole(UPGRADER_ROLE)
         override
     {}
+
+    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
+    }
 
     /**
      * @dev Create a new cosmetic item

@@ -20,7 +20,7 @@ contract SignatureVerifierTest is Test {
     function testInitialization() public {
         // Check domain separator
         bytes32 domainSeparator = signatureVerifier.getDomainSeparator();
-        assertNe(domainSeparator, bytes32(0));
+        assertNotEq(domainSeparator, bytes32(0));
     }
     
     function testGetNonce() public {
@@ -43,21 +43,21 @@ contract SignatureVerifierTest is Test {
         bytes32 pvpHash = signatureVerifier.PVP_ACTION_TYPEHASH();
         
         // These should be non-zero
-        assertNe(questHash, bytes32(0));
-        assertNe(craftHash, bytes32(0));
-        assertNe(pvpHash, bytes32(0));
+        assertNotEq(questHash, bytes32(0));
+        assertNotEq(craftHash, bytes32(0));
+        assertNotEq(pvpHash, bytes32(0));
         
         // And they should be different from each other
-        assertNe(questHash, craftHash);
-        assertNe(questHash, pvpHash);
-        assertNe(craftHash, pvpHash);
+        assertNotEq(questHash, craftHash);
+        assertNotEq(questHash, pvpHash);
+        assertNotEq(craftHash, pvpHash);
     }
     
     function testDomainSeparator() public {
         bytes32 separator = signatureVerifier.getDomainSeparator();
         
         // Should be non-zero
-        assertNe(separator, bytes32(0));
+        assertNotEq(separator, bytes32(0));
         
         // Should be consistent
         bytes32 separator2 = signatureVerifier.getDomainSeparator();

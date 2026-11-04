@@ -74,9 +74,8 @@ contract StakingContractTest is Test {
         ERC1967Proxy stakingProxy = new ERC1967Proxy(address(stakingImpl), stakingInitData);
         stakingContract = StakingContract(address(stakingProxy));
         
-        // Setup permissions
+        // Setup permissions (StakingContract does not mint GovernanceToken, which is onlyOwner-minted)
         vm.startPrank(owner);
-        governanceToken.grantRole(governanceToken.MINTER_ROLE(), address(stakingContract));
         utilityToken.grantRole(utilityToken.MINTER_ROLE(), address(stakingContract));
         gameAssetNFT.grantRole(gameAssetNFT.MINTER_ROLE(), address(stakingContract));
         gameAssetNFT.grantRole(gameAssetNFT.GAME_ROLE(), address(stakingContract));
@@ -107,7 +106,7 @@ contract StakingContractTest is Test {
         
         assertEq(poolId, 1);
         
-        StakingContract.StakingPool memory pool = stakingContract.stakingPools(poolId);
+        StakingContract.StakingPool memory pool = stakingContract.getStakingPool(poolId);
         assertEq(pool.poolId, poolId);
         assertEq(uint256(pool.poolType), uint256(StakingContract.PoolType.TOKEN_STAKING));
         assertEq(pool.stakingToken, address(governanceToken));
@@ -130,9 +129,9 @@ contract StakingContractTest is Test {
             10
         );
         
-        assertEq(poolId, 2);
+        assertEq(poolId, 1); // first pool
         
-        StakingContract.StakingPool memory pool = stakingContract.stakingPools(poolId);
+        StakingContract.StakingPool memory pool = stakingContract.getStakingPool(poolId);
         assertEq(uint256(pool.poolType), uint256(StakingContract.PoolType.NFT_STAKING));
         assertEq(pool.maxStakePerUser, 10);
         
@@ -165,11 +164,11 @@ contract StakingContractTest is Test {
         
         stakingContract.stakeTokens(poolId, 500 * 10**18);
         
-        StakingContract.UserStake memory userStake = stakingContract.userStakes(poolId, player1);
+        StakingContract.UserStake memory userStake = stakingContract.getUserStake(poolId, player1);
         assertEq(userStake.amount, 500 * 10**18);
         assertEq(userStake.lockUntil, block.timestamp + 30 days);
         
-        StakingContract.StakingPool memory pool = stakingContract.stakingPools(poolId);
+        StakingContract.StakingPool memory pool = stakingContract.getStakingPool(poolId);
         assertEq(pool.totalStaked, 500 * 10**18);
         
         vm.stopPrank();
@@ -206,12 +205,12 @@ contract StakingContractTest is Test {
         
         stakingContract.stakeNFT(poolId, tokenId);
         
-        StakingContract.UserStake memory userStake = stakingContract.userStakes(poolId, player1);
+        StakingContract.UserStake memory userStake = stakingContract.getUserStake(poolId, player1);
         assertEq(userStake.amount, 1);
         assertEq(userStake.stakedTokenIds.length, 1);
         assertEq(userStake.stakedTokenIds[0], tokenId);
         
-        StakingContract.StakingPool memory pool = stakingContract.stakingPools(poolId);
+        StakingContract.StakingPool memory pool = stakingContract.getStakingPool(poolId);
         assertEq(pool.totalStaked, 1);
         
         // Check NFT owner
@@ -239,7 +238,7 @@ contract StakingContractTest is Test {
         
         // Try to stake without approval
         vm.startPrank(player1);
-        vm.expectRevert("Transfer failed");
+        vm.expectRevert("ERC20: insufficient allowance"); // src uses raw transferFrom (OZ 4.x string)
         stakingContract.stakeTokens(poolId, 500 * 10**18);
         vm.stopPrank();
     }
@@ -276,9 +275,9 @@ contract StakingContractTest is Test {
         
         stakingContract.unstakeTokens(poolId, 500 * 10**18);
         
-        assertEq(governanceToken.balanceOf(player1), 500 * 10**18);
+        assertEq(governanceToken.balanceOf(player1), 1000 * 10**18); // 1000 staked-500 returned + 500 kept
         
-        StakingContract.StakingPool memory pool = stakingContract.stakingPools(poolId);
+        StakingContract.StakingPool memory pool = stakingContract.getStakingPool(poolId);
         assertEq(pool.totalStaked, 0);
         
         vm.stopPrank();
@@ -372,7 +371,7 @@ contract StakingContractTest is Test {
         
         stakingContract.updatePoolRewardRate(poolId, 2000);
         
-        StakingContract.StakingPool memory pool = stakingContract.stakingPools(poolId);
+        StakingContract.StakingPool memory pool = stakingContract.getStakingPool(poolId);
         assertEq(pool.rewardRate, 2000);
         
         vm.stopPrank();

@@ -548,9 +548,18 @@ library LibMath {
         uint256 periods
     ) internal pure returns (uint256) {
         uint256 factor = percentageOf(1e18, rate) + 1e18;
-        uint256 numerator = sub(1e18, pow(factor, -periods));
         uint256 denominator = sub(factor, 1e18);
-        return mul(payment, div(numerator, denominator)) / 1e18;
+        // (1 + r)^-periods in 1e18 fixed point: pow() cannot express
+        // negative exponents in uint256, so divide by (1 + r) repeatedly
+        // instead of raising to a negative power.
+        uint256 invFactor = 1e18;
+        for (uint256 i = 0; i < periods; i++) {
+            invFactor = div(mul(invFactor, 1e18), factor);
+        }
+        uint256 numerator = sub(1e18, invFactor);
+        // Annuity factor (1 - (1 + r)^-periods) / r, in 1e18 fixed point
+        uint256 annuityFactor = div(mul(numerator, 1e18), denominator);
+        return mul(payment, annuityFactor) / 1e18;
     }
 
     // ====================== BIT OPERATIONS ======================
@@ -638,15 +647,15 @@ library LibMath {
     /// @notice Sets a byte in a value at a specific position
     /// @param value The value to modify
     /// @param position The byte position (0-indexed from the right)
-    /// @param byte The byte value to set
+    /// @param byteValue The byte value to set
     /// @return The value with the byte set
     function setByte(
         uint256 value,
         uint256 position,
-        uint8 byte
+        uint8 byteValue
     ) internal pure returns (uint256) {
         uint256 mask = ~(0xff << (position * 8));
-        return (value & mask) | (uint256(byte) << (position * 8));
+        return (value & mask) | (uint256(byteValue) << (position * 8));
     }
 
     /// @notice Extracts a range of bytes from a value
@@ -693,73 +702,73 @@ library LibMath {
     // ====================== TIME OPERATIONS ======================
 
     /// @notice Converts seconds to minutes
-    /// @param seconds The number of seconds
+    /// @param secondsValue The number of seconds
     /// @return The number of minutes
-    function secondsToMinutes(uint256 seconds) internal pure returns (uint256) {
-        return div(seconds, 60);
+    function secondsToMinutes(uint256 secondsValue) internal pure returns (uint256) {
+        return div(secondsValue, 60);
     }
 
     /// @notice Converts minutes to seconds
-    /// @param minutes The number of minutes
+    /// @param minutesValue The number of minutes
     /// @return The number of seconds
-    function minutesToSeconds(uint256 minutes) internal pure returns (uint256) {
-        return mul(minutes, 60);
+    function minutesToSeconds(uint256 minutesValue) internal pure returns (uint256) {
+        return mul(minutesValue, 60);
     }
 
     /// @notice Converts seconds to hours
-    /// @param seconds The number of seconds
+    /// @param secondsValue The number of seconds
     /// @return The number of hours
-    function secondsToHours(uint256 seconds) internal pure returns (uint256) {
-        return div(seconds, 3600);
+    function secondsToHours(uint256 secondsValue) internal pure returns (uint256) {
+        return div(secondsValue, 3600);
     }
 
     /// @notice Converts hours to seconds
-    /// @param hours The number of hours
+    /// @param hoursValue The number of hours
     /// @return The number of seconds
-    function hoursToSeconds(uint256 hours) internal pure returns (uint256) {
-        return mul(hours, 3600);
+    function hoursToSeconds(uint256 hoursValue) internal pure returns (uint256) {
+        return mul(hoursValue, 3600);
     }
 
     /// @notice Converts seconds to days
-    /// @param seconds The number of seconds
+    /// @param secondsValue The number of seconds
     /// @return The number of days
-    function secondsToDays(uint256 seconds) internal pure returns (uint256) {
-        return div(seconds, 86400);
+    function secondsToDays(uint256 secondsValue) internal pure returns (uint256) {
+        return div(secondsValue, 86400);
     }
 
     /// @notice Converts days to seconds
-    /// @param days The number of days
+    /// @param daysValue The number of days
     /// @return The number of seconds
-    function daysToSeconds(uint256 days) internal pure returns (uint256) {
-        return mul(days, 86400);
+    function daysToSeconds(uint256 daysValue) internal pure returns (uint256) {
+        return mul(daysValue, 86400);
     }
 
     /// @notice Converts seconds to weeks
-    /// @param seconds The number of seconds
+    /// @param secondsValue The number of seconds
     /// @return The number of weeks
-    function secondsToWeeks(uint256 seconds) internal pure returns (uint256) {
-        return div(seconds, 604800);
+    function secondsToWeeks(uint256 secondsValue) internal pure returns (uint256) {
+        return div(secondsValue, 604800);
     }
 
     /// @notice Converts weeks to seconds
-    /// @param weeks The number of weeks
+    /// @param weeksValue The number of weeks
     /// @return The number of seconds
-    function weeksToSeconds(uint256 weeks) internal pure returns (uint256) {
-        return mul(weeks, 604800);
+    function weeksToSeconds(uint256 weeksValue) internal pure returns (uint256) {
+        return mul(weeksValue, 604800);
     }
 
     /// @notice Converts seconds to years (365 days)
-    /// @param seconds The number of seconds
+    /// @param secondsValue The number of seconds
     /// @return The number of years
-    function secondsToYears(uint256 seconds) internal pure returns (uint256) {
-        return div(seconds, 31536000);
+    function secondsToYears(uint256 secondsValue) internal pure returns (uint256) {
+        return div(secondsValue, 31536000);
     }
 
     /// @notice Converts years to seconds (365 days)
-    /// @param years The number of years
+    /// @param yearsValue The number of years
     /// @return The number of seconds
-    function yearsToSeconds(uint256 years) internal pure returns (uint256) {
-        return mul(years, 31536000);
+    function yearsToSeconds(uint256 yearsValue) internal pure returns (uint256) {
+        return mul(yearsValue, 31536000);
     }
 
     /// @notice Checks if a timestamp is in the past
@@ -816,31 +825,31 @@ library LibMath {
     // ====================== ETH UNIT CONVERSIONS ======================
 
     /// @notice Converts wei to ether
-    /// @param wei The amount in wei
+    /// @param weiValue The amount in wei
     /// @return The amount in ether (as a uint256 with 18 decimals)
-    function weiToEther(uint256 wei) internal pure returns (uint256) {
-        return div(wei, 1e18);
+    function weiToEther(uint256 weiValue) internal pure returns (uint256) {
+        return div(weiValue, 1e18);
     }
 
     /// @notice Converts ether to wei
-    /// @param ether The amount in ether (as a uint256 with 18 decimals)
+    /// @param etherValue The amount in ether (as a uint256 with 18 decimals)
     /// @return The amount in wei
-    function etherToWei(uint256 ether) internal pure returns (uint256) {
-        return mul(ether, 1e18);
+    function etherToWei(uint256 etherValue) internal pure returns (uint256) {
+        return mul(etherValue, 1e18);
     }
 
     /// @notice Converts wei to gwei
-    /// @param wei The amount in wei
+    /// @param weiValue The amount in wei
     /// @return The amount in gwei
-    function weiToGwei(uint256 wei) internal pure returns (uint256) {
-        return div(wei, 1e9);
+    function weiToGwei(uint256 weiValue) internal pure returns (uint256) {
+        return div(weiValue, 1e9);
     }
 
     /// @notice Converts gwei to wei
-    /// @param gwei The amount in gwei
+    /// @param gweiValue The amount in gwei
     /// @return The amount in wei
-    function gweiToWei(uint256 gwei) internal pure returns (uint256) {
-        return mul(gwei, 1e9);
+    function gweiToWei(uint256 gweiValue) internal pure returns (uint256) {
+        return mul(gweiValue, 1e9);
     }
 
     // ====================== TOKEN UNIT CONVERSIONS ======================
@@ -854,11 +863,11 @@ library LibMath {
     }
 
     /// @notice Converts wei to tokens (for tokens with 18 decimals)
-    /// @param wei The amount in wei
+    /// @param weiValue The amount in wei
     /// @param decimals The number of decimals
     /// @return The amount in tokens (as a uint256 with decimals)
-    function weiToTokens(uint256 wei, uint8 decimals) internal pure returns (uint256) {
+    function weiToTokens(uint256 weiValue, uint8 decimals) internal pure returns (uint256) {
         uint256 multiplier = 10**decimals;
-        return div(wei, multiplier);
+        return div(weiValue, multiplier);
     }
 }

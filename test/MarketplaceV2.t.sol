@@ -111,6 +111,12 @@ contract MarketplaceV2Test is Test {
         gameResourceNFT.grantRole(gameResourceNFT.MINTER_ROLE(), owner);
         marketplace.grantRole(marketplace.MODERATOR_ROLE(), owner);
         vm.stopPrank();
+        
+        // Fund test participants
+        vm.deal(seller, 1000 ether);
+        vm.deal(buyer, 1000 ether);
+        vm.deal(bidder1, 1000 ether);
+        vm.deal(bidder2, 1000 ether);
     }
     
     function testInitialization() public {
@@ -152,13 +158,13 @@ contract MarketplaceV2Test is Test {
         
         assertEq(listingId, 1);
         
-        MarketplaceV2.Listing memory listing = marketplace.listings(listingId);
+        MarketplaceV2.Listing memory listing = marketplace.getListing(listingId);
         assertEq(uint256(listing.listingType), uint256(MarketplaceV2.ListingType.DUTCH_AUCTION));
         assertEq(listing.price, 100 * 10**18);
         assertEq(listing.endPrice, 10 * 10**18);
         assertEq(listing.endTime, block.timestamp + 1 days);
         
-        MarketplaceV2.DutchAuction memory auction = marketplace.dutchAuctions(listingId);
+        MarketplaceV2.DutchAuction memory auction = marketplace.getDutchAuction(listingId);
         assertEq(auction.startingPrice, 100 * 10**18);
         assertEq(auction.endingPrice, 10 * 10**18);
         assertTrue(auction.isActive);
@@ -199,7 +205,7 @@ contract MarketplaceV2Test is Test {
         
         assertEq(listingId, 1);
         
-        MarketplaceV2.Listing memory listing = marketplace.listings(listingId);
+        MarketplaceV2.Listing memory listing = marketplace.getListing(listingId);
         assertEq(listing.amount, 50);
         assertEq(uint256(listing.assetType), uint256(MarketplaceV2.AssetType.ERC1155));
         
@@ -233,17 +239,22 @@ contract MarketplaceV2Test is Test {
         uint256 initialPrice = marketplace.getDutchAuctionPrice(listingId);
         assertEq(initialPrice, 100 * 10**18);
         
-        // Fast forward 50 seconds
-        vm.warp(block.timestamp + 50);
+                // Warp targets must not be derived from the timestamp once a vm.warp has
+        // run: with via_ir the optimizer can reuse a pre-warp timestamp read
+        // (Foundry lint block-timestamp-across-warp). Use stored auction state.
+        MarketplaceV2.DutchAuction memory _dutchAuction = marketplace.getDutchAuction(listingId);
+        
+// Fast forward 50 seconds
+        vm.warp(_dutchAuction.startTime + 50);
         
         // Check price decreased
         uint256 halfPrice = marketplace.getDutchAuctionPrice(listingId);
         assertEq(halfPrice, 55 * 10**18); // (100 + 10) / 2 = 55
         
-        // Fast forward to end
-        vm.warp(block.timestamp + 101);
+        // Fast forward to the exact auction end (price may be queried at endTime)
+        vm.warp(_dutchAuction.endTime);
         
-        // Price should be at or near ending price
+        // Price should be the ending price
         uint256 endPrice = marketplace.getDutchAuctionPrice(listingId);
         assertEq(endPrice, 10 * 10**18);
         
@@ -282,7 +293,7 @@ contract MarketplaceV2Test is Test {
         uint256 currentPrice = marketplace.getDutchAuctionPrice(listingId);
         
         vm.expectEmit(true, true, true, false);
-        emit ItemSold(listingId, seller, buyer, currentPrice, any);
+        emit ItemSold(listingId, seller, buyer, currentPrice, 0);
         emit DutchAuctionEnded(listingId, buyer, currentPrice);
         
         marketplace.buyFromDutchAuction{value: currentPrice}(listingId);
@@ -297,8 +308,10 @@ contract MarketplaceV2Test is Test {
         assertGt(feeRecipient.balance, 0);
         
         // Check listing inactive
-        assertFalse(marketplace.listings(listingId).isActive);
-        assertFalse(marketplace.dutchAuctions(listingId).isActive);
+        MarketplaceV2.Listing memory _sold = marketplace.getListing(listingId);
+        assertFalse(_sold.isActive);
+        MarketplaceV2.DutchAuction memory _auction = marketplace.getDutchAuction(listingId);
+        assertFalse(_auction.isActive);
         
         vm.stopPrank();
     }
@@ -329,7 +342,7 @@ contract MarketplaceV2Test is Test {
         // Try to buy with insufficient funds
         vm.startPrank(buyer);
         uint256 currentPrice = marketplace.getDutchAuctionPrice(listingId);
-        vm.expectRevert("Insufficient payment");
+        vm.expectRevert(MarketplaceV2.InsufficientPayment.selector);
         marketplace.buyFromDutchAuction{value: currentPrice - 1}(listingId);
         vm.stopPrank();
     }
@@ -370,7 +383,7 @@ contract MarketplaceV2Test is Test {
         
         assertEq(bulkId, 1);
         
-        MarketplaceV2.BulkListing memory bulk = marketplace.bulkListings(bulkId);
+        MarketplaceV2.BulkListing memory bulk = marketplace.getBulkListing(bulkId);
         assertEq(bulk.seller, seller);
         assertEq(bulk.tokenIds.length, 3);
         assertEq(bulk.pricePerItem, 50 * 10**18);
@@ -418,7 +431,7 @@ contract MarketplaceV2Test is Test {
         
         assertEq(bulkId, 1);
         
-        MarketplaceV2.BulkListing memory bulk = marketplace.bulkListings(bulkId);
+        MarketplaceV2.BulkListing memory bulk = marketplace.getBulkListing(bulkId);
         assertEq(bulk.amounts.length, 2);
         assertEq(bulk.amounts[0], 10);
         assertEq(bulk.amounts[1], 20);
@@ -473,7 +486,8 @@ contract MarketplaceV2Test is Test {
         assertGt(seller.balance, 0);
         
         // Check bulk listing inactive
-        assertFalse(marketplace.bulkListings(bulkId).isActive);
+        MarketplaceV2.BulkListing memory _bulk = marketplace.getBulkListing(bulkId);
+        assertFalse(_bulk.isActive);
         
         vm.stopPrank();
     }
@@ -561,7 +575,8 @@ contract MarketplaceV2Test is Test {
         
         marketplace.cancelBulkListing(bulkId);
         
-        assertFalse(marketplace.bulkListings(bulkId).isActive);
+        MarketplaceV2.BulkListing memory _bulk = marketplace.getBulkListing(bulkId);
+        assertFalse(_bulk.isActive);
         
         // NFTs should still be owned by seller
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -609,7 +624,7 @@ contract MarketplaceV2Test is Test {
         );
         vm.stopPrank();
         
-        MarketplaceV2.ListingMetadata memory metadata = marketplace.listingMetadata(listingId);
+        MarketplaceV2.ListingMetadata memory metadata = marketplace.getListingMetadata(listingId);
         assertEq(metadata.name, "Legendary Sword");
         assertEq(metadata.categoryId, 1);
         assertEq(metadata.rarity, 5);
@@ -621,7 +636,7 @@ contract MarketplaceV2Test is Test {
         
         // Create and list NFT
         uint256 tokenId = gameAssetNFT.mintAsset(
-            seller,
+            owner,
             GameAssetNFT.AssetType.CHARACTER,
             1,
             "https://example.com/character1.json"
@@ -661,7 +676,7 @@ contract MarketplaceV2Test is Test {
         
         // List NFT with category 1
         uint256 tokenId1 = gameAssetNFT.mintAsset(
-            seller,
+            owner,
             GameAssetNFT.AssetType.CHARACTER,
             1,
             "https://example.com/character1.json"
@@ -679,7 +694,7 @@ contract MarketplaceV2Test is Test {
         
         // List NFT with category 2
         uint256 tokenId2 = gameAssetNFT.mintAsset(
-            seller,
+            owner,
             GameAssetNFT.AssetType.LAND,
             1,
             "https://example.com/land1.json"
@@ -714,7 +729,7 @@ contract MarketplaceV2Test is Test {
         
         // List common NFT
         uint256 tokenId1 = gameAssetNFT.mintAsset(
-            seller,
+            owner,
             GameAssetNFT.AssetType.CHARACTER,
             1,
             "https://example.com/character1.json"
@@ -732,7 +747,7 @@ contract MarketplaceV2Test is Test {
         
         // List legendary NFT
         uint256 tokenId2 = gameAssetNFT.mintAsset(
-            seller,
+            owner,
             GameAssetNFT.AssetType.CHARACTER,
             1,
             "https://example.com/character2.json"
@@ -771,7 +786,7 @@ contract MarketplaceV2Test is Test {
         
         for (uint256 i = 0; i < 4; i++) {
             tokenIds[i] = gameAssetNFT.mintAsset(
-                seller,
+                owner,
                 GameAssetNFT.AssetType.CHARACTER,
                 1,
                 string(abi.encodePacked("https://example.com/character", i, ".json"))
@@ -923,6 +938,8 @@ contract MarketplaceV2Test is Test {
     function testFuzzDutchAuctionPrice(uint256 startingPrice, uint256 endingPrice, uint256 duration) public {
         vm.assume(startingPrice > endingPrice);
         vm.assume(duration > 0);
+        vm.assume(startingPrice <= 1e30);
+        vm.assume(duration <= 365 days);
         
         // Setup Dutch auction
         vm.startPrank(owner);
@@ -950,8 +967,8 @@ contract MarketplaceV2Test is Test {
         uint256 initialPrice = marketplace.getDutchAuctionPrice(listingId);
         assertEq(initialPrice, startingPrice);
         
-        // Fast forward to end
-        vm.warp(block.timestamp + duration + 1);
+        // Fast forward to the exact auction end
+        vm.warp(block.timestamp + duration);
         
         // Check final price
         uint256 finalPrice = marketplace.getDutchAuctionPrice(listingId);

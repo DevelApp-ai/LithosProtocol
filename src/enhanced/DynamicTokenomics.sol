@@ -52,6 +52,10 @@ contract DynamicTokenomics is
     EconomicMetrics public economicMetrics;
     mapping(uint256 => DynamicPricing) public itemPricing; // itemId => pricing
     mapping(uint256 => TokenSink) public tokenSinks; // sinkId => sink
+
+    function getEconomicMetrics() external view returns (EconomicMetrics memory) {
+        return economicMetrics;
+    }
     
     // Dynamic reward pools
     mapping(uint256 => uint256) public questRewardPools; // questId => pool amount
@@ -111,6 +115,14 @@ contract DynamicTokenomics is
         onlyRole(UPGRADER_ROLE)
         override
     {}
+
+    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
+    }
 
     /**
      * @dev Update economic metrics based on current game state
