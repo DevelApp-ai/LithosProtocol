@@ -239,15 +239,20 @@ contract MarketplaceV2Test is Test {
         uint256 initialPrice = marketplace.getDutchAuctionPrice(listingId);
         assertEq(initialPrice, 100 * 10**18);
         
-        // Fast forward 50 seconds
-        vm.warp(block.timestamp + 50);
+                // Warp targets must not be derived from the timestamp once a vm.warp has
+        // run: with via_ir the optimizer can reuse a pre-warp timestamp read
+        // (Foundry lint block-timestamp-across-warp). Use stored auction state.
+        MarketplaceV2.DutchAuction memory _dutchAuction = marketplace.getDutchAuction(listingId);
+        
+// Fast forward 50 seconds
+        vm.warp(_dutchAuction.startTime + 50);
         
         // Check price decreased
         uint256 halfPrice = marketplace.getDutchAuctionPrice(listingId);
         assertEq(halfPrice, 55 * 10**18); // (100 + 10) / 2 = 55
         
         // Fast forward to the exact auction end (price may be queried at endTime)
-        vm.warp(block.timestamp + 50);
+        vm.warp(_dutchAuction.endTime);
         
         // Price should be the ending price
         uint256 endPrice = marketplace.getDutchAuctionPrice(listingId);
