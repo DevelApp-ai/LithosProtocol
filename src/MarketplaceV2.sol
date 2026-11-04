@@ -36,6 +36,37 @@ contract MarketplaceV2 is
     enum ListingType { FIXED_PRICE, AUCTION, DUTCH_AUCTION }
     enum AssetType { ERC721, ERC1155 }
 
+    // Custom errors (revert strings removed to satisfy the EIP-170 size limit)
+    error ZeroPrice();
+    error ZeroAmount();
+    error ZeroDuration();
+    error InvalidPriceRange();
+    error InvalidIndex();
+    error InvalidAddress();
+    error ArrayLengthMismatch();
+    error EmptyBulkListing();
+    error NotTokenOwner();
+    error NotApproved();
+    error InsufficientBalance();
+    error InsufficientPayment();
+    error PaymentFailed();
+    error FeeTransferFailed();
+    error SellerPaymentFailed();
+    error ListingNotActive();
+    error BulkListingNotActive();
+    error NotDutchAuction();
+    error NotAuction();
+    error NotFixedPrice();
+    error AuctionNotActive();
+    error AuctionEnded();
+    error AuctionNotEnded();
+    error SelfPurchase();
+    error NotAuthorized();
+    error FeeTooHigh();
+    error InvalidBidAmount();
+    error EthNotAccepted();
+    error BidTooLow();
+
     // Listing structure
     struct Listing {
         uint256 listingId;
@@ -211,6 +242,180 @@ contract MarketplaceV2 is
         nextListingId = 1;
     }
 
+    // ========== INTERNAL HELPERS ==========
+
+    /**
+     * @dev Verify msg.sender owns tokenId and the marketplace is approved (ERC721)
+     */
+    function _assertERC721Listable(address nftContract, uint256 tokenId) internal view {
+        if (IERC721(nftContract).ownerOf(tokenId) != msg.sender) revert NotTokenOwner();
+        if (!IERC721(nftContract).isApprovedForAll(msg.sender, address(this)) && IERC721(nftContract).getApproved(tokenId) != address(this)) revert NotApproved();
+    }
+
+    /**
+     * @dev Verify msg.sender holds amount of tokenId and the marketplace is approved (ERC1155)
+     */
+    function _assertERC1155Listable(address nftContract, uint256 tokenId, uint256 amount) internal view {
+        if (IERC1155(nftContract).balanceOf(msg.sender, tokenId) < amount) revert InsufficientBalance();
+        if (!IERC1155(nftContract).isApprovedForAll(msg.sender, address(this))) revert NotApproved();
+    }
+
+    /**
+     * @dev Create a listing record and index it under the seller
+     */
+    function _createListing(
+        address nftContract,
+        uint256 tokenId,
+        uint256 amount,
+        AssetType assetType,
+        ListingType listingType,
+        address paymentToken,
+        uint256 price,
+        uint256 endPrice,
+        uint256 endTime
+    ) internal returns (uint256 listingId) {
+        listingId = nextListingId++;
+        listings[listingId] = Listing({
+            listingId: listingId,
+            seller: msg.sender,
+            nftContract: nftContract,
+            tokenId: tokenId,
+            amount: amount,
+            assetType: assetType,
+            listingType: listingType,
+            paymentToken: paymentToken,
+            price: price,
+            endPrice: endPrice,
+            endTime: endTime,
+            isActive: true,
+            highestBidder: address(0),
+            highestBid: 0
+        });
+        userListings[msg.sender].push(listingId);
+    }
+
+    /**
+     * @dev Create the Dutch auction state for a listing
+     */
+    function _startDutchAuction(
+        uint256 listingId,
+        uint256 startingPrice,
+        uint256 endingPrice,
+        uint256 endTime
+    ) internal {
+        dutchAuctions[listingId] = DutchAuction({
+            startingPrice: startingPrice,
+            endingPrice: endingPrice,
+            startTime: block.timestamp,
+            endTime: endTime,
+            isActive: true
+        });
+    }
+
+    /**
+     * @dev Create a bulk listing record
+     */
+    function _createBulkListing(
+        address nftContract,
+        uint256[] memory tokenIds,
+        uint256[] memory amounts,
+        ListingType listingType,
+        address paymentToken,
+        uint256 pricePerItem,
+        uint256 duration
+    ) internal returns (uint256 bulkId) {
+        bulkId = nextListingId++;
+        bulkListings[bulkId] = BulkListing({
+            bulkId: bulkId,
+            seller: msg.sender,
+            nftContract: nftContract,
+            tokenIds: tokenIds,
+            amounts: amounts,
+            listingType: listingType,
+            paymentToken: paymentToken,
+            pricePerItem: pricePerItem,
+            endTime: listingType == ListingType.AUCTION ? block.timestamp + duration : 0,
+            isActive: true,
+            itemsSold: 0
+        });
+    }
+
+    /**
+     * @dev Collect payment (ETH or ERC20), forward the fee and pay the seller
+     * @return fee The marketplace fee taken from totalPrice
+     */
+    function _settlePayment(
+        address paymentToken,
+        address seller,
+        uint256 totalPrice
+    ) internal returns (uint256 fee) {
+        fee = (totalPrice * marketplaceFee) / 10000;
+        uint256 sellerAmount = totalPrice - fee;
+
+        if (paymentToken == address(0)) {
+            if (msg.value < totalPrice) revert InsufficientPayment();
+
+            // Send fee to fee recipient
+            if (fee > 0) {
+                payable(feeRecipient).transfer(fee);
+            }
+
+            // Send payment to seller
+            payable(seller).transfer(sellerAmount);
+
+            // Refund excess
+            if (msg.value > totalPrice) {
+                payable(msg.sender).transfer(msg.value - totalPrice);
+            }
+        } else {
+            if (!IERC20(paymentToken).transferFrom(msg.sender, address(this), totalPrice)) revert PaymentFailed();
+
+            // Send fee to fee recipient
+            if (fee > 0) {
+                if (!IERC20(paymentToken).transfer(feeRecipient, fee)) revert FeeTransferFailed();
+            }
+
+            // Send payment to seller
+            if (!IERC20(paymentToken).transfer(seller, sellerAmount)) revert SellerPaymentFailed();
+        }
+    }
+
+    /**
+     * @dev Release contract-held funds (ETH or ERC20) to a recipient
+     */
+    function _releaseFunds(address token, address to, uint256 amount) internal {
+        if (token == address(0)) {
+            payable(to).transfer(amount);
+        } else {
+            if (!IERC20(token).transfer(to, amount)) revert PaymentFailed();
+        }
+    }
+
+    /**
+     * @dev Transfer a set of bulk-listed NFTs to msg.sender
+     */
+    function _transferBulk(
+        BulkListing storage bulk,
+        uint256[] memory tokenIds,
+        uint256[] memory amounts
+    ) internal {
+        if (amounts[0] == 1) {
+            // ERC721
+            for (uint256 i = 0; i < tokenIds.length; i++) {
+                IERC721(bulk.nftContract).safeTransferFrom(bulk.seller, msg.sender, tokenIds[i]);
+            }
+        } else {
+            // ERC1155
+            IERC1155(bulk.nftContract).safeBatchTransferFrom(
+                bulk.seller,
+                msg.sender,
+                tokenIds,
+                amounts,
+                ""
+            );
+        }
+    }
+
     // ========== FIXED PRICE & AUCTION LISTINGS (Legacy) ==========
 
     /**
@@ -230,31 +435,21 @@ contract MarketplaceV2 is
         uint256 price,
         uint256 duration
     ) external whenNotPaused nonReentrant returns (uint256) {
-        require(price > 0, "Price must be greater than 0");
-        require(IERC721(nftContract).ownerOf(tokenId) == msg.sender, "Not token owner");
-        require(IERC721(nftContract).isApprovedForAll(msg.sender, address(this)) || IERC721(nftContract).getApproved(tokenId) == address(this), "Not approved");
+        if (price == 0) revert ZeroPrice();
+        _assertERC721Listable(nftContract, tokenId);
 
-        uint256 listingId = nextListingId++;
         uint256 endTime = listingType == ListingType.AUCTION ? block.timestamp + duration : 0;
-
-        listings[listingId] = Listing({
-            listingId: listingId,
-            seller: msg.sender,
-            nftContract: nftContract,
-            tokenId: tokenId,
-            amount: 1,
-            assetType: AssetType.ERC721,
-            listingType: listingType,
-            paymentToken: paymentToken,
-            price: price,
-            endPrice: 0,
-            endTime: endTime,
-            isActive: true,
-            highestBidder: address(0),
-            highestBid: 0
-        });
-
-        userListings[msg.sender].push(listingId);
+        uint256 listingId = _createListing(
+            nftContract,
+            tokenId,
+            1,
+            AssetType.ERC721,
+            listingType,
+            paymentToken,
+            price,
+            0,
+            endTime
+        );
 
         emit ItemListed(listingId, msg.sender, nftContract, tokenId, 1, price, listingType);
 
@@ -280,32 +475,22 @@ contract MarketplaceV2 is
         uint256 price,
         uint256 duration
     ) external whenNotPaused nonReentrant returns (uint256) {
-        require(price > 0, "Price must be greater than 0");
-        require(amount > 0, "Amount must be greater than 0");
-        require(IERC1155(nftContract).balanceOf(msg.sender, tokenId) >= amount, "Insufficient balance");
-        require(IERC1155(nftContract).isApprovedForAll(msg.sender, address(this)), "Not approved");
+        if (price == 0) revert ZeroPrice();
+        if (amount == 0) revert ZeroAmount();
+        _assertERC1155Listable(nftContract, tokenId, amount);
 
-        uint256 listingId = nextListingId++;
         uint256 endTime = listingType == ListingType.AUCTION ? block.timestamp + duration : 0;
-
-        listings[listingId] = Listing({
-            listingId: listingId,
-            seller: msg.sender,
-            nftContract: nftContract,
-            tokenId: tokenId,
-            amount: amount,
-            assetType: AssetType.ERC1155,
-            listingType: listingType,
-            paymentToken: paymentToken,
-            price: price,
-            endPrice: 0,
-            endTime: endTime,
-            isActive: true,
-            highestBidder: address(0),
-            highestBid: 0
-        });
-
-        userListings[msg.sender].push(listingId);
+        uint256 listingId = _createListing(
+            nftContract,
+            tokenId,
+            amount,
+            AssetType.ERC1155,
+            listingType,
+            paymentToken,
+            price,
+            0,
+            endTime
+        );
 
         emit ItemListed(listingId, msg.sender, nftContract, tokenId, amount, price, listingType);
 
@@ -331,40 +516,24 @@ contract MarketplaceV2 is
         uint256 duration,
         address paymentToken
     ) external whenNotPaused nonReentrant returns (uint256) {
-        require(startingPrice > endingPrice, "Ending price must be lower");
-        require(duration > 0, "Duration must be positive");
-        require(IERC721(nftContract).ownerOf(tokenId) == msg.sender, "Not token owner");
-        require(IERC721(nftContract).isApprovedForAll(msg.sender, address(this)) || IERC721(nftContract).getApproved(tokenId) == address(this), "Not approved");
+        if (startingPrice <= endingPrice) revert InvalidPriceRange();
+        if (duration == 0) revert ZeroDuration();
+        _assertERC721Listable(nftContract, tokenId);
 
-        uint256 listingId = nextListingId++;
         uint256 endTime = block.timestamp + duration;
+        uint256 listingId = _createListing(
+            nftContract,
+            tokenId,
+            1,
+            AssetType.ERC721,
+            ListingType.DUTCH_AUCTION,
+            paymentToken,
+            startingPrice,
+            endingPrice,
+            endTime
+        );
 
-        listings[listingId] = Listing({
-            listingId: listingId,
-            seller: msg.sender,
-            nftContract: nftContract,
-            tokenId: tokenId,
-            amount: 1,
-            assetType: AssetType.ERC721,
-            listingType: ListingType.DUTCH_AUCTION,
-            paymentToken: paymentToken,
-            price: startingPrice,
-            endPrice: endingPrice,
-            endTime: endTime,
-            isActive: true,
-            highestBidder: address(0),
-            highestBid: 0
-        });
-
-        dutchAuctions[listingId] = DutchAuction({
-            startingPrice: startingPrice,
-            endingPrice: endingPrice,
-            startTime: block.timestamp,
-            endTime: endTime,
-            isActive: true
-        });
-
-        userListings[msg.sender].push(listingId);
+        _startDutchAuction(listingId, startingPrice, endingPrice, endTime);
 
         emit ItemListed(listingId, msg.sender, nftContract, tokenId, 1, startingPrice, ListingType.DUTCH_AUCTION);
         emit DutchAuctionStarted(listingId, startingPrice, endingPrice, duration);
@@ -391,41 +560,25 @@ contract MarketplaceV2 is
         uint256 duration,
         address paymentToken
     ) external whenNotPaused nonReentrant returns (uint256) {
-        require(startingPrice > endingPrice, "Ending price must be lower");
-        require(duration > 0, "Duration must be positive");
-        require(amount > 0, "Amount must be greater than 0");
-        require(IERC1155(nftContract).balanceOf(msg.sender, tokenId) >= amount, "Insufficient balance");
-        require(IERC1155(nftContract).isApprovedForAll(msg.sender, address(this)), "Not approved");
+        if (startingPrice <= endingPrice) revert InvalidPriceRange();
+        if (duration == 0) revert ZeroDuration();
+        if (amount == 0) revert ZeroAmount();
+        _assertERC1155Listable(nftContract, tokenId, amount);
 
-        uint256 listingId = nextListingId++;
         uint256 endTime = block.timestamp + duration;
+        uint256 listingId = _createListing(
+            nftContract,
+            tokenId,
+            amount,
+            AssetType.ERC1155,
+            ListingType.DUTCH_AUCTION,
+            paymentToken,
+            startingPrice,
+            endingPrice,
+            endTime
+        );
 
-        listings[listingId] = Listing({
-            listingId: listingId,
-            seller: msg.sender,
-            nftContract: nftContract,
-            tokenId: tokenId,
-            amount: amount,
-            assetType: AssetType.ERC1155,
-            listingType: ListingType.DUTCH_AUCTION,
-            paymentToken: paymentToken,
-            price: startingPrice,
-            endPrice: endingPrice,
-            endTime: endTime,
-            isActive: true,
-            highestBidder: address(0),
-            highestBid: 0
-        });
-
-        dutchAuctions[listingId] = DutchAuction({
-            startingPrice: startingPrice,
-            endingPrice: endingPrice,
-            startTime: block.timestamp,
-            endTime: endTime,
-            isActive: true
-        });
-
-        userListings[msg.sender].push(listingId);
+        _startDutchAuction(listingId, startingPrice, endingPrice, endTime);
 
         emit ItemListed(listingId, msg.sender, nftContract, tokenId, amount, startingPrice, ListingType.DUTCH_AUCTION);
         emit DutchAuctionStarted(listingId, startingPrice, endingPrice, duration);
@@ -440,8 +593,8 @@ contract MarketplaceV2 is
      */
     function getDutchAuctionPrice(uint256 listingId) public view returns (uint256) {
         DutchAuction memory auction = dutchAuctions[listingId];
-        require(auction.isActive, "Auction not active");
-        require(block.timestamp <= auction.endTime, "Auction ended");
+        if (!auction.isActive) revert AuctionNotActive();
+        if (block.timestamp > auction.endTime) revert AuctionEnded();
 
         uint256 elapsed = block.timestamp - auction.startTime;
         uint256 totalDuration = auction.endTime - auction.startTime;
@@ -459,43 +612,14 @@ contract MarketplaceV2 is
      */
     function buyFromDutchAuction(uint256 listingId) external payable whenNotPaused nonReentrant {
         Listing storage listing = listings[listingId];
-        require(listing.isActive, "Listing not active");
-        require(listing.listingType == ListingType.DUTCH_AUCTION, "Not a Dutch auction");
-        require(msg.sender != listing.seller, "Cannot buy own item");
-        require(block.timestamp <= listing.endTime, "Auction ended");
+        if (!listing.isActive) revert ListingNotActive();
+        if (listing.listingType != ListingType.DUTCH_AUCTION) revert NotDutchAuction();
+        if (msg.sender == listing.seller) revert SelfPurchase();
+        if (block.timestamp > listing.endTime) revert AuctionEnded();
 
         uint256 currentPrice = getDutchAuctionPrice(listingId);
         uint256 totalPrice = currentPrice * listing.amount;
-        uint256 fee = (totalPrice * marketplaceFee) / 10000;
-        uint256 sellerAmount = totalPrice - fee;
-
-        // Handle payment
-        if (listing.paymentToken == address(0)) {
-            require(msg.value >= totalPrice, "Insufficient payment");
-            
-            // Send fee to fee recipient
-            if (fee > 0) {
-                payable(feeRecipient).transfer(fee);
-            }
-            
-            // Send payment to seller
-            payable(listing.seller).transfer(sellerAmount);
-            
-            // Refund excess
-            if (msg.value > totalPrice) {
-                payable(msg.sender).transfer(msg.value - totalPrice);
-            }
-        } else {
-            require(IERC20(listing.paymentToken).transferFrom(msg.sender, address(this), totalPrice), "Payment failed");
-            
-            // Send fee to fee recipient
-            if (fee > 0) {
-                require(IERC20(listing.paymentToken).transfer(feeRecipient, fee), "Fee transfer failed");
-            }
-            
-            // Send payment to seller
-            require(IERC20(listing.paymentToken).transfer(listing.seller, sellerAmount), "Seller payment failed");
-        }
+        uint256 fee = _settlePayment(listing.paymentToken, listing.seller, totalPrice);
 
         // Transfer NFT
         _transferNFT(listing, msg.sender);
@@ -527,35 +651,28 @@ contract MarketplaceV2 is
         uint256 pricePerItem,
         uint256 duration
     ) external whenNotPaused nonReentrant returns (uint256) {
-        require(tokenIds.length > 0, "Must list at least one item");
-        require(pricePerItem > 0, "Price must be positive");
-        
+        if (tokenIds.length == 0) revert EmptyBulkListing();
+        if (pricePerItem == 0) revert ZeroPrice();
+
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            require(IERC721(nftContract).ownerOf(tokenIds[i]) == msg.sender, "Not token owner");
-            require(IERC721(nftContract).isApprovedForAll(msg.sender, address(this)) || IERC721(nftContract).getApproved(tokenIds[i]) == address(this), "Not approved");
+            _assertERC721Listable(nftContract, tokenIds[i]);
         }
 
-        uint256 bulkId = nextListingId++;
-        uint256 endTime = listingType == ListingType.AUCTION ? block.timestamp + duration : 0;
-
-        bulkListings[bulkId] = BulkListing({
-            bulkId: bulkId,
-            seller: msg.sender,
-            nftContract: nftContract,
-            tokenIds: tokenIds,
-            amounts: new uint256[](tokenIds.length),
-            listingType: listingType,
-            paymentToken: paymentToken,
-            pricePerItem: pricePerItem,
-            endTime: endTime,
-            isActive: true,
-            itemsSold: 0
-        });
-
-        // Initialize amounts array
+        // Amounts are 1 per token for ERC721
+        uint256[] memory amounts = new uint256[](tokenIds.length);
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            bulkListings[bulkId].amounts[i] = 1;
+            amounts[i] = 1;
         }
+
+        uint256 bulkId = _createBulkListing(
+            nftContract,
+            tokenIds,
+            amounts,
+            listingType,
+            paymentToken,
+            pricePerItem,
+            duration
+        );
 
         emit BulkListingCreated(bulkId, msg.sender, tokenIds.length, pricePerItem);
 
@@ -581,32 +698,25 @@ contract MarketplaceV2 is
         uint256 pricePerItem,
         uint256 duration
     ) external whenNotPaused nonReentrant returns (uint256) {
-        require(tokenIds.length > 0, "Must list at least one item");
-        require(tokenIds.length == amounts.length, "Arrays length mismatch");
-        require(pricePerItem > 0, "Price must be positive");
-        
+        if (tokenIds.length == 0) revert EmptyBulkListing();
+        if (tokenIds.length != amounts.length) revert ArrayLengthMismatch();
+        if (pricePerItem == 0) revert ZeroPrice();
+
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            require(amounts[i] > 0, "Amount must be positive");
-            require(IERC1155(nftContract).balanceOf(msg.sender, tokenIds[i]) >= amounts[i], "Insufficient balance");
+            if (amounts[i] == 0) revert ZeroAmount();
+            if (IERC1155(nftContract).balanceOf(msg.sender, tokenIds[i]) < amounts[i]) revert InsufficientBalance();
         }
-        require(IERC1155(nftContract).isApprovedForAll(msg.sender, address(this)), "Not approved");
+        if (!IERC1155(nftContract).isApprovedForAll(msg.sender, address(this))) revert NotApproved();
 
-        uint256 bulkId = nextListingId++;
-        uint256 endTime = listingType == ListingType.AUCTION ? block.timestamp + duration : 0;
-
-        bulkListings[bulkId] = BulkListing({
-            bulkId: bulkId,
-            seller: msg.sender,
-            nftContract: nftContract,
-            tokenIds: tokenIds,
-            amounts: amounts,
-            listingType: listingType,
-            paymentToken: paymentToken,
-            pricePerItem: pricePerItem,
-            endTime: endTime,
-            isActive: true,
-            itemsSold: 0
-        });
+        uint256 bulkId = _createBulkListing(
+            nftContract,
+            tokenIds,
+            amounts,
+            listingType,
+            paymentToken,
+            pricePerItem,
+            duration
+        );
 
         emit BulkListingCreated(bulkId, msg.sender, tokenIds.length, pricePerItem);
 
@@ -619,64 +729,21 @@ contract MarketplaceV2 is
      */
     function buyBulkListing(uint256 bulkId) external payable whenNotPaused nonReentrant {
         BulkListing storage bulk = bulkListings[bulkId];
-        require(bulk.isActive, "Bulk listing not active");
-        require(bulk.listingType == ListingType.FIXED_PRICE, "Only fixed price bulk listings supported");
-        require(msg.sender != bulk.seller, "Cannot buy own items");
+        if (!bulk.isActive) revert BulkListingNotActive();
+        if (bulk.listingType != ListingType.FIXED_PRICE) revert NotFixedPrice();
+        if (msg.sender == bulk.seller) revert SelfPurchase();
 
         // Calculate total price
         uint256 totalItems = 0;
         for (uint256 i = 0; i < bulk.tokenIds.length; i++) {
             totalItems += bulk.amounts[i];
         }
-        
-        uint256 totalPrice = bulk.pricePerItem * totalItems;
-        uint256 fee = (totalPrice * marketplaceFee) / 10000;
-        uint256 sellerAmount = totalPrice - fee;
 
-        // Handle payment
-        if (bulk.paymentToken == address(0)) {
-            require(msg.value >= totalPrice, "Insufficient payment");
-            
-            // Send fee to fee recipient
-            if (fee > 0) {
-                payable(feeRecipient).transfer(fee);
-            }
-            
-            // Send payment to seller
-            payable(bulk.seller).transfer(sellerAmount);
-            
-            // Refund excess
-            if (msg.value > totalPrice) {
-                payable(msg.sender).transfer(msg.value - totalPrice);
-            }
-        } else {
-            require(IERC20(bulk.paymentToken).transferFrom(msg.sender, address(this), totalPrice), "Payment failed");
-            
-            // Send fee to fee recipient
-            if (fee > 0) {
-                require(IERC20(bulk.paymentToken).transfer(feeRecipient, fee), "Fee transfer failed");
-            }
-            
-            // Send payment to seller
-            require(IERC20(bulk.paymentToken).transfer(bulk.seller, sellerAmount), "Seller payment failed");
-        }
+        uint256 totalPrice = bulk.pricePerItem * totalItems;
+        _settlePayment(bulk.paymentToken, bulk.seller, totalPrice);
 
         // Transfer all NFTs
-        if (bulk.amounts[0] == 1) {
-            // ERC721
-            for (uint256 i = 0; i < bulk.tokenIds.length; i++) {
-                IERC721(bulk.nftContract).safeTransferFrom(bulk.seller, msg.sender, bulk.tokenIds[i]);
-            }
-        } else {
-            // ERC1155
-            IERC1155(bulk.nftContract).safeBatchTransferFrom(
-                bulk.seller,
-                msg.sender,
-                bulk.tokenIds,
-                bulk.amounts,
-                ""
-            );
-        }
+        _transferBulk(bulk, bulk.tokenIds, bulk.amounts);
 
         // Mark bulk listing as inactive
         bulk.isActive = false;
@@ -694,42 +761,13 @@ contract MarketplaceV2 is
         uint256[] memory itemIndices
     ) external payable nonReentrant {
         BulkListing storage bulk = bulkListings[bulkId];
-        require(bulk.isActive, "Bulk listing not active");
-        require(bulk.listingType == ListingType.FIXED_PRICE, "Only fixed price bulk listings supported");
-        require(msg.sender != bulk.seller, "Cannot buy own items");
+        if (!bulk.isActive) revert BulkListingNotActive();
+        if (bulk.listingType != ListingType.FIXED_PRICE) revert NotFixedPrice();
+        if (msg.sender == bulk.seller) revert SelfPurchase();
 
         uint256 totalItems = itemIndices.length;
         uint256 totalPrice = bulk.pricePerItem * totalItems;
-        uint256 fee = (totalPrice * marketplaceFee) / 10000;
-        uint256 sellerAmount = totalPrice - fee;
-
-        // Handle payment
-        if (bulk.paymentToken == address(0)) {
-            require(msg.value >= totalPrice, "Insufficient payment");
-            
-            // Send fee to fee recipient
-            if (fee > 0) {
-                payable(feeRecipient).transfer(fee);
-            }
-            
-            // Send payment to seller
-            payable(bulk.seller).transfer(sellerAmount);
-            
-            // Refund excess
-            if (msg.value > totalPrice) {
-                payable(msg.sender).transfer(msg.value - totalPrice);
-            }
-        } else {
-            require(IERC20(bulk.paymentToken).transferFrom(msg.sender, address(this), totalPrice), "Payment failed");
-            
-            // Send fee to fee recipient
-            if (fee > 0) {
-                require(IERC20(bulk.paymentToken).transfer(feeRecipient, fee), "Fee transfer failed");
-            }
-            
-            // Send payment to seller
-            require(IERC20(bulk.paymentToken).transfer(bulk.seller, sellerAmount), "Seller payment failed");
-        }
+        _settlePayment(bulk.paymentToken, bulk.seller, totalPrice);
 
         // Transfer selected NFTs
         uint256[] memory selectedTokenIds = new uint256[](itemIndices.length);
@@ -737,26 +775,12 @@ contract MarketplaceV2 is
 
         for (uint256 i = 0; i < itemIndices.length; i++) {
             uint256 index = itemIndices[i];
-            require(index < bulk.tokenIds.length, "Invalid index");
+            if (index >= bulk.tokenIds.length) revert InvalidIndex();
             selectedTokenIds[i] = bulk.tokenIds[index];
             selectedAmounts[i] = bulk.amounts[index];
         }
 
-        if (selectedAmounts[0] == 1) {
-            // ERC721
-            for (uint256 i = 0; i < selectedTokenIds.length; i++) {
-                IERC721(bulk.nftContract).safeTransferFrom(bulk.seller, msg.sender, selectedTokenIds[i]);
-            }
-        } else {
-            // ERC1155
-            IERC1155(bulk.nftContract).safeBatchTransferFrom(
-                bulk.seller,
-                msg.sender,
-                selectedTokenIds,
-                selectedAmounts,
-                ""
-            );
-        }
+        _transferBulk(bulk, selectedTokenIds, selectedAmounts);
 
         bulk.itemsSold += totalItems;
 
@@ -769,8 +793,8 @@ contract MarketplaceV2 is
      */
     function cancelBulkListing(uint256 bulkId) external whenNotPaused nonReentrant {
         BulkListing storage bulk = bulkListings[bulkId];
-        require(bulk.isActive, "Bulk listing not active");
-        require(bulk.seller == msg.sender || hasRole(MODERATOR_ROLE, msg.sender), "Not authorized");
+        if (!bulk.isActive) revert BulkListingNotActive();
+        if (bulk.seller != msg.sender && !hasRole(MODERATOR_ROLE, msg.sender)) revert NotAuthorized();
 
         bulk.isActive = false;
 
@@ -905,41 +929,12 @@ contract MarketplaceV2 is
      */
     function buyItem(uint256 listingId) external payable whenNotPaused nonReentrant {
         Listing storage listing = listings[listingId];
-        require(listing.isActive, "Listing not active");
-        require(listing.listingType == ListingType.FIXED_PRICE, "Not a fixed price listing");
-        require(msg.sender != listing.seller, "Cannot buy own item");
+        if (!listing.isActive) revert ListingNotActive();
+        if (listing.listingType != ListingType.FIXED_PRICE) revert NotFixedPrice();
+        if (msg.sender == listing.seller) revert SelfPurchase();
 
         uint256 totalPrice = listing.price;
-        uint256 fee = (totalPrice * marketplaceFee) / 10000;
-        uint256 sellerAmount = totalPrice - fee;
-
-        // Handle payment
-        if (listing.paymentToken == address(0)) {
-            require(msg.value >= totalPrice, "Insufficient payment");
-            
-            // Send fee to fee recipient
-            if (fee > 0) {
-                payable(feeRecipient).transfer(fee);
-            }
-            
-            // Send payment to seller
-            payable(listing.seller).transfer(sellerAmount);
-            
-            // Refund excess
-            if (msg.value > totalPrice) {
-                payable(msg.sender).transfer(msg.value - totalPrice);
-            }
-        } else {
-            require(IERC20(listing.paymentToken).transferFrom(msg.sender, address(this), totalPrice), "Payment failed");
-            
-            // Send fee to fee recipient
-            if (fee > 0) {
-                require(IERC20(listing.paymentToken).transfer(feeRecipient, fee), "Fee transfer failed");
-            }
-            
-            // Send payment to seller
-            require(IERC20(listing.paymentToken).transfer(listing.seller, sellerAmount), "Seller payment failed");
-        }
+        uint256 fee = _settlePayment(listing.paymentToken, listing.seller, totalPrice);
 
         // Transfer NFT
         _transferNFT(listing, msg.sender);
@@ -965,33 +960,29 @@ contract MarketplaceV2 is
      */
     function placeBid(uint256 listingId, uint256 bidAmount) public payable whenNotPaused nonReentrant {
         Listing storage listing = listings[listingId];
-        require(listing.isActive, "Listing not active");
-        require(listing.listingType == ListingType.AUCTION, "Not an auction");
-        require(block.timestamp < listing.endTime, "Auction ended");
-        require(msg.sender != listing.seller, "Cannot bid on own item");
+        if (!listing.isActive) revert ListingNotActive();
+        if (listing.listingType != ListingType.AUCTION) revert NotAuction();
+        if (block.timestamp >= listing.endTime) revert AuctionEnded();
+        if (msg.sender == listing.seller) revert SelfPurchase();
 
         uint256 finalBidAmount;
         
         if (listing.paymentToken == address(0)) {
             finalBidAmount = msg.value;
-            require(bidAmount == 0, "Bid amount should be 0 for ETH auctions");
+            if (bidAmount != 0) revert InvalidBidAmount();
         } else {
-            require(msg.value == 0, "Should not send ETH for ERC20 auctions");
-            require(bidAmount > 0, "Bid amount must be specified for ERC20 tokens");
+            if (msg.value != 0) revert EthNotAccepted();
+            if (bidAmount == 0) revert InvalidBidAmount();
             finalBidAmount = bidAmount;
-            require(IERC20(listing.paymentToken).transferFrom(msg.sender, address(this), finalBidAmount), "Bid transfer failed");
+            if (!IERC20(listing.paymentToken).transferFrom(msg.sender, address(this), finalBidAmount)) revert PaymentFailed();
         }
 
-        require(finalBidAmount > listing.highestBid, "Bid too low");
-        require(finalBidAmount >= listing.price, "Bid below starting price");
+        if (finalBidAmount <= listing.highestBid) revert BidTooLow();
+        if (finalBidAmount < listing.price) revert BidTooLow();
 
         // Refund previous highest bidder
         if (listing.highestBidder != address(0)) {
-            if (listing.paymentToken == address(0)) {
-                payable(listing.highestBidder).transfer(listing.highestBid);
-            } else {
-                require(IERC20(listing.paymentToken).transfer(listing.highestBidder, listing.highestBid), "Refund failed");
-            }
+            _releaseFunds(listing.paymentToken, listing.highestBidder, listing.highestBid);
         }
 
         listing.highestBidder = msg.sender;
@@ -1007,9 +998,9 @@ contract MarketplaceV2 is
      */
     function endAuction(uint256 listingId) external whenNotPaused nonReentrant {
         Listing storage listing = listings[listingId];
-        require(listing.isActive, "Listing not active");
-        require(listing.listingType == ListingType.AUCTION, "Not an auction");
-        require(block.timestamp >= listing.endTime, "Auction not ended");
+        if (!listing.isActive) revert ListingNotActive();
+        if (listing.listingType != ListingType.AUCTION) revert NotAuction();
+        if (block.timestamp < listing.endTime) revert AuctionNotEnded();
 
         listing.isActive = false;
 
@@ -1020,19 +1011,11 @@ contract MarketplaceV2 is
 
             // Send fee to fee recipient
             if (fee > 0) {
-                if (listing.paymentToken == address(0)) {
-                    payable(feeRecipient).transfer(fee);
-                } else {
-                    require(IERC20(listing.paymentToken).transfer(feeRecipient, fee), "Fee transfer failed");
-                }
+                _releaseFunds(listing.paymentToken, feeRecipient, fee);
             }
 
             // Send payment to seller
-            if (listing.paymentToken == address(0)) {
-                payable(listing.seller).transfer(sellerAmount);
-            } else {
-                require(IERC20(listing.paymentToken).transfer(listing.seller, sellerAmount), "Seller payment failed");
-            }
+            _releaseFunds(listing.paymentToken, listing.seller, sellerAmount);
 
             // Transfer NFT to winner
             _transferNFT(listing, listing.highestBidder);
@@ -1049,16 +1032,12 @@ contract MarketplaceV2 is
      */
     function cancelListing(uint256 listingId) external whenNotPaused nonReentrant {
         Listing storage listing = listings[listingId];
-        require(listing.isActive, "Listing not active");
-        require(listing.seller == msg.sender || hasRole(MODERATOR_ROLE, msg.sender), "Not authorized");
+        if (!listing.isActive) revert ListingNotActive();
+        if (listing.seller != msg.sender && !hasRole(MODERATOR_ROLE, msg.sender)) revert NotAuthorized();
 
         // For auctions, refund highest bidder
         if (listing.listingType == ListingType.AUCTION && listing.highestBidder != address(0)) {
-            if (listing.paymentToken == address(0)) {
-                payable(listing.highestBidder).transfer(listing.highestBid);
-            } else {
-                require(IERC20(listing.paymentToken).transfer(listing.highestBidder, listing.highestBid), "Refund failed");
-            }
+            _releaseFunds(listing.paymentToken, listing.highestBidder, listing.highestBid);
         }
 
         listing.isActive = false;
@@ -1090,7 +1069,7 @@ contract MarketplaceV2 is
      * @param newFee The new fee in basis points
      */
     function updateMarketplaceFee(uint256 newFee) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(newFee <= 1000, "Fee too high"); // Max 10%
+        if (newFee > 1000) revert FeeTooHigh(); // Max 10%
         marketplaceFee = newFee;
     }
 
@@ -1099,7 +1078,7 @@ contract MarketplaceV2 is
      * @param newRecipient The new fee recipient address
      */
     function updateFeeRecipient(address newRecipient) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(newRecipient != address(0), "Invalid address");
+        if (newRecipient == address(0)) revert InvalidAddress();
         feeRecipient = newRecipient;
     }
 
@@ -1135,4 +1114,3 @@ contract MarketplaceV2 is
         return super.supportsInterface(interfaceId);
     }
 }
-

@@ -337,7 +337,7 @@ contract MarketplaceV2Test is Test {
         // Try to buy with insufficient funds
         vm.startPrank(buyer);
         uint256 currentPrice = marketplace.getDutchAuctionPrice(listingId);
-        vm.expectRevert("Insufficient payment");
+        vm.expectRevert(MarketplaceV2.InsufficientPayment.selector);
         marketplace.buyFromDutchAuction{value: currentPrice - 1}(listingId);
         vm.stopPrank();
     }
